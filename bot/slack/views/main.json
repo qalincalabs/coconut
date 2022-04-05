@@ -1,0 +1,185 @@
+{
+	"type": "home",
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*:wave: Bonjour Olivier, bienvenue sur Coconut, la platforme de transport collaboratif pour les circuits courts.*\nTu peux ici créer et gérer tes tournées, voir les nouveaux envois et les assigner aux tournées."
+			},
+			"accessory": {
+				"type": "button",
+				"text": {
+					"type": "plain_text",
+					"text": ":gear: Réglages"
+				},
+				"action_id": "open_settings"
+			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Créer une tournée"
+					},
+					"style": "primary",
+					"action_id": "create_tour"
+				}
+			]
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*Tournées*"
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Le coin de Paliseul du 5 avril 2022 (5 arrêts, 2h20) *[en cours]*"
+			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Finir",
+						"emoji": true
+					},
+					"style": "primary",
+					"value": "click_me_123",
+					"action_id": "actionId-1"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Carte",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-2"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Détails",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-3"
+				}
+			]
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Le coin de Framont du 6 avril 2022 (3 arrêts, 1h40)"
+			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Démarrer",
+						"emoji": true
+					},
+					"style": "primary",
+					"value": "click_me_123",
+					"action_id": "actionId-0"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Annuler",
+						"emoji": true
+					},
+					"style": "danger",
+					"value": "click_me_123",
+					"action_id": "actionId-1"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Carte",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-2"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Détails",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-3"
+				}
+			]
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*Nouveaux envois*"
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Commande <https://openfoodnetwork.be/|#48237823578>, 4kg, *réfrigéré*, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul> pour vendredi 5 avril 2022"
+			},
+			"accessory": {
+				"type": "button",
+				"text": {
+					"type": "plain_text",
+					"text": "Assigner",
+					"emoji": true
+				},
+				"value": "click_me_123",
+				"action_id": "button-action"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Commande <https://openfoodnetwork.be/|#48237823579>, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont> pour jeudi 4 avril 2022"
+			},
+			"accessory": {
+				"type": "button",
+				"text": {
+					"type": "plain_text",
+					"text": "Assigner",
+					"emoji": true
+				},
+				"value": "click_me_123",
+				"action_id": "button-action"
+			}
+		}
+	]
+}
