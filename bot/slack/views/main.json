@@ -5,7 +5,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "*:wave: Bonjour Olivier, bienvenue sur Coconut, la platforme de transport collaboratif pour les circuits courts.*\nTu peux ici créer et gérer tes tournées, voir les nouveaux envois et les assigner aux tournées."
+				"text": "*:coconut: Bonjour Olivier, bienvenue sur Coconut, la platforme de transport collaboratif pour les circuits courts.*\nTu peux ici créer et gérer tes tournées, voir les nouveaux envois et les assigner aux tournées."
 			},
 			"accessory": {
 				"type": "button",
