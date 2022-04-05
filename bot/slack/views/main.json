@@ -141,35 +141,89 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Commande <https://openfoodnetwork.be/|#48237823578>, 4kg, *réfrigéré*, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul> pour vendredi 5 avril 2022"
-			},
-			"accessory": {
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"text": "Assigner",
-					"emoji": true
-				},
-				"value": "click_me_123",
-				"action_id": "button-action"
+				"text": "Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022, 4kg, *réfrigéré*, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
 			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Planifier",
+						"emoji": true
+					},
+					"style": "primary",
+					"value": "click_me_123",
+					"action_id": "actionId-0"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Annuler",
+						"emoji": true
+					},
+					"style": "danger",
+					"value": "click_me_123",
+					"action_id": "actionId-1"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Livré",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-3"
+				}
+			]
 		},
 		{
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Commande <https://openfoodnetwork.be/|#48237823579>, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont> pour jeudi 4 avril 2022"
-			},
-			"accessory": {
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"text": "Assigner",
-					"emoji": true
-				},
-				"value": "click_me_123",
-				"action_id": "button-action"
+				"text": "Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont>"
 			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Planifier",
+						"emoji": true
+					},
+					"style": "primary",
+					"value": "click_me_123",
+					"action_id": "actionId-0"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Annuler",
+						"emoji": true
+					},
+					"style": "danger",
+					"value": "click_me_123",
+					"action_id": "actionId-1"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Livré",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-3"
+				}
+			]
 		}
 	]
 }
