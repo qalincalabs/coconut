@@ -141,89 +141,73 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022, 4kg, *réfrigéré*, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+				"text": "Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022, 2kg, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":truck: Planifier",
+							"emoji": true
+						},
+						"value": "plan"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":heavy_multiplication_x: Annuler",
+							"emoji": true
+						},
+						"value": "cancel"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":house: Livré",
+							"emoji": true
+						},
+						"value": "plan"
+					}
+				]
 			}
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Planifier",
-						"emoji": true
-					},
-					"style": "primary",
-					"value": "click_me_123",
-					"action_id": "actionId-0"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Annuler",
-						"emoji": true
-					},
-					"style": "danger",
-					"value": "click_me_123",
-					"action_id": "actionId-1"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Livré",
-						"emoji": true
-					},
-					"value": "click_me_123",
-					"action_id": "actionId-3"
-				}
-			]
 		},
 		{
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
 				"text": "Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont>"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":truck: Planifier",
+							"emoji": true
+						},
+						"value": "plan"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":heavy_multiplication_x: Annuler",
+							"emoji": true
+						},
+						"value": "cancel"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":house: Livré",
+							"emoji": true
+						},
+						"value": "plan"
+					}
+				]
 			}
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Planifier",
-						"emoji": true
-					},
-					"style": "primary",
-					"value": "click_me_123",
-					"action_id": "actionId-0"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Annuler",
-						"emoji": true
-					},
-					"style": "danger",
-					"value": "click_me_123",
-					"action_id": "actionId-1"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Livré",
-						"emoji": true
-					},
-					"value": "click_me_123",
-					"action_id": "actionId-3"
-				}
-			]
 		}
 	]
 }
