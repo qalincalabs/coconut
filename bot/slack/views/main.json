@@ -44,7 +44,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Le coin de Paliseul du 5 avril 2022 (5 arrêts, 2h20) *[en cours]*"
+				"text": ":truck: Le coin de Paliseul du 5 avril 2022 (5 arrêts, 2h20) *[en cours]*"
 			}
 		},
 		{
@@ -87,7 +87,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Le coin de Framont du 6 avril 2022 (3 arrêts, 1h40)"
+				"text": ":truck: Le coin de Framont du 6 avril 2022 (3 arrêts, 1h40)"
 			}
 		},
 		{
@@ -141,7 +141,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022, 2kg, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022, 2kg, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -177,7 +177,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont>"
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont>"
 			},
 			"accessory": {
 				"type": "overflow",
