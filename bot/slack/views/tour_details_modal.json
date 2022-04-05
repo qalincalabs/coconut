@@ -1,0 +1,116 @@
+{
+	"type": "modal",
+	"close": {
+		"type": "plain_text",
+		"text": "Fermer",
+		"emoji": true
+	},
+	"title": {
+		"type": "plain_text",
+		"text": "Détails tournée",
+		"emoji": true
+	},
+	"blocks": [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "Le coin de Framont",
+				"emoji": true
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":calendar: *vendredi 3 avril 2022*"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":stopwatch: 3h00 :roller_coaster: 150km"
+			}
+		},
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "Envois",
+				"emoji": true
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont>"
+			},
+			"accessory": {
+				"type": "button",
+				"text": {
+					"type": "plain_text",
+					"text": "Retirer",
+					"emoji": true
+				},
+				"style": "danger",
+				"value": "click_me_123"
+			}
+		},
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "Arrêts",
+				"emoji": true
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":round_pushpin: *0* : <https://www.google.com/maps|rue du chafour, 5 à Framont> | 8 :package:"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":round_pushpin: *1* : <https://www.google.com/maps|rue devant le bois, 4 à Paliseul> | 2 :mailbox: 1 :package:"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":round_pushpin: *2* : <https://www.google.com/maps|rue du chafour, 5 à Framont>"
+			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Organiser :gear:",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "organise"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Ajouter :round_pushpin:",
+						"emoji": true
+					},
+					"value": "click_me_123",
+					"action_id": "add"
+				}
+			]
+		}
+	]
+}
