@@ -1,0 +1,52 @@
+{
+	"blocks": [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "Nouvelle tournée"
+			}
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "plain_text_input",
+				"action_id": "plain_text_input-action"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Nom"
+			}
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "datepicker",
+				"initial_date": "2022-04-05",
+				"placeholder": {
+					"type": "plain_text",
+					"text": "Select a date"
+				},
+				"action_id": "datepicker-action"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Date"
+			}
+		},
+		{
+			"type": "actions",
+			"elements": [
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Créer"
+					},
+					"value": "click_me_123",
+					"action_id": "actionId-0"
+				}
+			]
+		}
+	]
+}
