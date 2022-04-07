@@ -27,6 +27,22 @@
 					},
 					"style": "primary",
 					"action_id": "create_tour"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": ":koala: Simuler ma logistique"
+					},
+					"action_id": "koala_link"
+				},
+				{
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": ":airplane: Visualiser ma logistique"
+					},
+					"action_id": "cockpit_link"
 				}
 			]
 		},
