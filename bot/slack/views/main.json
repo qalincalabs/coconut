@@ -6,45 +6,52 @@
 			"text": {
 				"type": "mrkdwn",
 				"text": "*:coconut: Bonjour Olivier, bienvenue sur Coconut, la platforme de transport collaboratif pour les circuits courts.*\nTu peux ici créer et gérer tes tournées, voir les nouveaux envois et les assigner aux tournées."
-			},
-			"accessory": {
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"text": ":gear: Réglages"
-				},
-				"action_id": "open_settings"
 			}
 		},
 		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Créer une tournée"
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*Options*"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":gear: Réglages"
+						},
+						"value": "settings"
+					}
+				]
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "*La suite logCiCa pour simuler et visualiser ma logistique* :koala: :airplane:"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":koala: Simuler ma logistique"
+						},
+						"value": "end"
 					},
-					"style": "primary",
-					"action_id": "create_tour"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": ":koala: Simuler ma logistique"
-					},
-					"action_id": "koala_link"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": ":airplane: Visualiser ma logistique"
-					},
-					"action_id": "cockpit_link"
-				}
-			]
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":airplane: Visualiser ma logistique"
+						},
+						"value": "end"
+					}
+				]
+			}
 		},
 		{
 			"type": "section",
@@ -76,7 +83,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":truck: Le coin de Paliseul du 5 avril 2022"
+				"text": ":truck: Le coin de Paliseul du 5 avril 2022 *[planifié]*"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -112,10 +119,13 @@
 			]
 		},
 		{
+			"type": "divider"
+		},
+		{
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":truck: Le coin de Framont du 6 avril 2022\n        *[en cours]*"
+				"text": ":truck: Le coin de Framont du 6 avril 2022 *[en cours]*"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -175,7 +185,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022\n        depuis *Shopify*"
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022 depuis *Shopify*"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -191,18 +201,18 @@
 					{
 						"text": {
 							"type": "plain_text",
-							"text": ":heavy_multiplication_x: Annuler",
-							"emoji": true
-						},
-						"value": "cancel"
-					},
-					{
-						"text": {
-							"type": "plain_text",
 							"text": ":house: Livré",
 							"emoji": true
 						},
 						"value": "plan"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":octagonal_sign: Annuler",
+							"emoji": true
+						},
+						"value": "cancel"
 					}
 				]
 			}
@@ -216,15 +226,18 @@
 				},
 				{
 					"type": "mrkdwn",
-					"text": ":package: 2kg"
+					"text": ":woman-lifting-weights: 2kg"
 				}
 			]
+		},
+		{
+			"type": "divider"
 		},
 		{
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022\n        depuis *OFN*"
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022 depuis *OFN*"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -240,18 +253,18 @@
 					{
 						"text": {
 							"type": "plain_text",
-							"text": ":heavy_multiplication_x: Annuler",
-							"emoji": true
-						},
-						"value": "cancel"
-					},
-					{
-						"text": {
-							"type": "plain_text",
 							"text": ":house: Livré",
 							"emoji": true
 						},
 						"value": "plan"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":octagonal_sign: Annuler",
+							"emoji": true
+						},
+						"value": "cancel"
 					}
 				]
 			}
@@ -265,7 +278,7 @@
 				},
 				{
 					"type": "mrkdwn",
-					"text": ":package: 4kg"
+					"text": ":woman-lifting-weights: 4kg"
 				}
 			]
 		}
