@@ -6,8 +6,8 @@ Collaborative transport platform for local food systems
 
 ## Desktop
 
-![slack home page desktop](docs/images/slack_app_homepage.png)
+<img src="docs/images/slack_app_homepage.png" width="600">
 
 ## Smartphone
 
-![slack home page desktop](docs/images/slack_app_homepage_smartphone.png)
+<img src="docs/images/slack_app_homepage_smartphone.png" width="300">
