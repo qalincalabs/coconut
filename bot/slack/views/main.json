@@ -57,91 +57,109 @@
 			"type": "divider"
 		},
 		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": ":truck: Le coin de Paliseul du 5 avril 2022 (5 arrêts, 2h20) *[en cours]*"
-			}
-		},
-		{
 			"type": "actions",
 			"elements": [
 				{
 					"type": "button",
 					"text": {
 						"type": "plain_text",
-						"text": "Finir",
-						"emoji": true
-					},
-					"style": "primary",
-					"value": "click_me_123",
-					"action_id": "actionId-1"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Carte",
-						"emoji": true
-					},
-					"value": "click_me_123",
-					"action_id": "actionId-2"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Détails",
-						"emoji": true
-					},
-					"value": "click_me_123",
-					"action_id": "actionId-3"
-				}
-			]
-		},
-		{
-			"type": "section",
-			"text": {
-				"type": "mrkdwn",
-				"text": ":truck: Le coin de Framont du 6 avril 2022 (3 arrêts, 1h40)"
-			}
-		},
-		{
-			"type": "actions",
-			"elements": [
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Démarrer",
+						"text": "Créer une tournée",
 						"emoji": true
 					},
 					"style": "primary",
 					"value": "click_me_123",
 					"action_id": "actionId-0"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Annuler",
-						"emoji": true
-					},
-					"style": "danger",
-					"value": "click_me_123",
-					"action_id": "actionId-1"
-				},
-				{
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Détails",
-						"emoji": true
-					},
-					"value": "click_me_123",
-					"action_id": "actionId-3"
 				}
 			]
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":truck: Le coin de Paliseul du 5 avril 2022"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":rocket: Démarrer"
+						},
+						"value": "end"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":octagonal_sign: Annuler"
+						},
+						"value": "end"
+					}
+				]
+			}
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": ":round_pushpin: <https://www.google.com/maps/dir/Solbosch,+1050+Ixelles,+Belgique/Carlsbourg,+Paliseul,+Belgique/@50.3663503,4.2298702,9z/data=!3m1!4b1!4m13!4m12!1m5!1m1!1s0x47c3c4d987b68c81:0x8d5dbedb6dcdddb0!2m2!1d4.3877386!2d50.8099947!1m5!1m1!1s0x47ea786f0e003c1d:0xd5952767a773b7a3!2m2!1d5.0822437!2d49.8947012|5 arrêts>"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":stopwatch: 2h20"
+				}
+			]
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":truck: Le coin de Framont du 6 avril 2022\n        *[en cours]*"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":checkered_flag: Finir"
+						},
+						"value": "end"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":octagonal_sign: Annuler"
+						},
+						"value": "end"
+					}
+				]
+			}
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": ":round_pushpin: <https://www.google.com/maps/dir/Solbosch,+1050+Ixelles,+Belgique/Carlsbourg,+Paliseul,+Belgique/@50.3663503,4.2298702,9z/data=!3m1!4b1!4m13!4m12!1m5!1m1!1s0x47c3c4d987b68c81:0x8d5dbedb6dcdddb0!2m2!1d4.3877386!2d50.8099947!1m5!1m1!1s0x47ea786f0e003c1d:0xd5952767a773b7a3!2m2!1d5.0822437!2d49.8947012|3 arrêts>"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":stopwatch: 1h40"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":package: 4"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":woman-lifting-weights: 20kg"
+				}
+			]
+		},
+		{
+			"type": "divider"
 		},
 		{
 			"type": "section",
@@ -157,7 +175,7 @@
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022, 2kg, <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022\n        depuis *Shopify*"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -190,10 +208,23 @@
 			}
 		},
 		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": ":round_pushpin: <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":package: 2kg"
+				}
+			]
+		},
+		{
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022, 2kg, <https://www.google.com/maps|rue du chafour, 5 à Framont>"
+				"text": ":postbox: Commande <https://openfoodnetwork.be/|#48237823579> du 3 avril 2022\n        depuis *OFN*"
 			},
 			"accessory": {
 				"type": "overflow",
@@ -224,6 +255,19 @@
 					}
 				]
 			}
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": ":round_pushpin: <https://www.google.com/maps|rue du chafour 5 à Paliseul>"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":package: 4kg"
+				}
+			]
 		}
 	]
 }
