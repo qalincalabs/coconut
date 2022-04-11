@@ -227,6 +227,40 @@
           "name": "Digicirco Google"
         }
       }
+    },
+    {
+      "parameters": {
+        "functionCode": "const ofnOrder = item\nconst order = \n{\n    number: ofnOrder.number,\n    date: new Date(ofnOrder.created_at).toISOString().substring(0,10),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name\n    },\n    broker: {\n      name: \"OFN\",\n    },\n    items: ofnOrder.line_items.map(i => ({\n        name: i.variant.product_name,\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      streetAddress: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      }\n    },\n    shippingMethod: {\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
+      },
+      "name": "Map order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation insertOneOrder($order: OrderInsertInput!) {\n  insertOneOrder(data: $order) {\n    number\n  }\n}",
+        "variables": "={\n \"order\": {{JSON.stringify($json)}} \n}"
+      },
+      "name": "GraphQL",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        1640,
+        100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "14",
+          "name": "logcica mongo"
+        }
+      }
     }
   ],
   "connections": {
@@ -257,6 +291,11 @@
         [
           {
             "node": "Enrich",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Map order",
             "type": "main",
             "index": 0
           }
@@ -338,6 +377,22 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Map order": {
+      "main": [
+        [
+          {
+            "node": "GraphQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GraphQL": {
+      "main": [
+        []
       ]
     }
   },
