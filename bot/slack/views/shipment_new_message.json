@@ -1,0 +1,61 @@
+{
+	"blocks": [
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":postbox: *Nouvel envoi :* Commande <https://openfoodnetwork.be/|#48237823578> du 2 avril 2022 depuis *Shopify*"
+			},
+			"accessory": {
+				"type": "overflow",
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":truck: Planifier",
+							"emoji": true
+						},
+						"value": "plan"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":house: Livré",
+							"emoji": true
+						},
+						"value": "plan"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":octagonal_sign: Annuler",
+							"emoji": true
+						},
+						"value": "cancel"
+					}
+				]
+			}
+		},
+		{
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": ":aerial_tramway: Livraison par Bpost"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":round_pushpin: <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":label: 5 produit(s)"
+				},
+				{
+					"type": "mrkdwn",
+					"text": ":woman-lifting-weights: 2kg"
+				}
+			]
+		}
+	]
+}
