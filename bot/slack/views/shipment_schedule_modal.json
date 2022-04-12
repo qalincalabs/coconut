@@ -1,0 +1,101 @@
+{
+	"type": "modal",
+	"title": {
+		"type": "plain_text",
+		"text": "Planifier l'envoi",
+		"emoji": true
+	},
+	"submit": {
+		"type": "plain_text",
+		"text": "Planifier",
+		"emoji": true
+	},
+	"close": {
+		"type": "plain_text",
+		"text": "Annuler",
+		"emoji": true
+	},
+	"blocks": [
+		{
+			"type": "header",
+			"text": {
+				"type": "plain_text",
+				"text": "Envoi #48237823578",
+				"emoji": true
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Commande <https://openfoodnetwork.be/|#48237823578>"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":aerial_tramway: Livraison par Bpost"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":round_pushpin: <https://www.google.com/maps|rue devant le bois, 4 à Paliseul>"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":label: 5 produit(s)"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": ":woman-lifting-weights: 2kg"
+			}
+		},
+		{
+			"type": "divider"
+		},
+		{
+			"type": "input",
+			"element": {
+				"type": "static_select",
+				"placeholder": {
+					"type": "plain_text",
+					"text": "Selectionne une tournée",
+					"emoji": true
+				},
+				"options": [
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":truck: Le coin de Paliseul du 5 avril 2022",
+							"emoji": true
+						},
+						"value": "value-1"
+					},
+					{
+						"text": {
+							"type": "plain_text",
+							"text": ":truck: Le coin de Framont du 6 avril 2022",
+							"emoji": true
+						},
+						"value": "value-2"
+					}
+				],
+				"action_id": "static_select-action"
+			},
+			"label": {
+				"type": "plain_text",
+				"text": "Tournée",
+				"emoji": true
+			}
+		}
+	]
+}
