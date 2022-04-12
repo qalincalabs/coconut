@@ -135,8 +135,8 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 1,
       "position": [
-        1570,
-        270
+        1580,
+        420
       ],
       "credentials": {
         "slackApi": {
@@ -230,37 +230,80 @@
     },
     {
       "parameters": {
-        "functionCode": "const ofnOrder = item\nconst order = \n{\n    number: ofnOrder.number,\n    date: new Date(ofnOrder.created_at).toISOString().substring(0,10),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name\n    },\n    broker: {\n      name: \"OFN\",\n    },\n    items: ofnOrder.line_items.map(i => ({\n        name: i.variant.product_name,\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      streetAddress: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      }\n    },\n    shippingMethod: {\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
+        "functionCode": "const ofnOrder = $node[\"Enrich\"].json\nconst mapsShippingGeo = $node[\"Geocode\"].json.results[0].geometry.location\nconst order = \n{\n    number: ofnOrder.number,\n    date: new Date(ofnOrder.created_at).toISOString(),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name\n    },\n    broker: {\n      name: \"OFN\",\n    },\n    items: ofnOrder.line_items.map(i => ({\n        name: i.variant.product_name,\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      streetAddress: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      },\n      geo:{\n        type:\"Point\",\n        coordinates:[mapsShippingGeo.lng,mapsShippingGeo.lat]\n      }\n    },\n    shippingMethod: {\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
       },
       "name": "Map order",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        1420,
-        100
+        1740,
+        140
       ]
     },
     {
       "parameters": {
-        "authentication": "headerAuth",
         "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
         "requestFormat": "json",
         "query": "mutation insertOneOrder($order: OrderInsertInput!) {\n  insertOneOrder(data: $order) {\n    number\n  }\n}",
-        "variables": "={\n \"order\": {{JSON.stringify($json)}} \n}"
+        "variables": "={\n \"order\": {{JSON.stringify($node[\"Map order\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$node[\"Mongo Realm Access Token\"].json.access_token}}"
+            }
+          ]
+        }
       },
       "name": "GraphQL",
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        1640,
-        100
-      ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "14",
-          "name": "logcica mongo"
+        2080,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/auth/providers/api-key/login",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"key\": \"{{ $env.COCONUT_MONGO_REALM_API_KEY }}\"\n}"
+      },
+      "name": "Mongo Realm Access Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://maps.googleapis.com/maps/api/geocode/json",
+        "options": {},
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "address",
+              "value": "={{$json[\"ship_address\"][\"mapsSearchQuery\"]}}"
+            },
+            {
+              "name": "key",
+              "value": "={{$env.COCONUT_GOOGLE_MAPS_API_KEY}}"
+            }
+          ]
         }
-      }
+      },
+      "name": "Geocode",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        140
+      ]
     }
   ],
   "connections": {
@@ -293,11 +336,6 @@
             "node": "Enrich",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Map order",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -307,6 +345,11 @@
         [
           {
             "node": "Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Geocode",
             "type": "main",
             "index": 0
           }
@@ -383,6 +426,17 @@
       "main": [
         [
           {
+            "node": "Mongo Realm Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mongo Realm Access Token": {
+      "main": [
+        [
+          {
             "node": "GraphQL",
             "type": "main",
             "index": 0
@@ -390,9 +444,15 @@
         ]
       ]
     },
-    "GraphQL": {
+    "Geocode": {
       "main": [
-        []
+        [
+          {
+            "node": "Map order",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
