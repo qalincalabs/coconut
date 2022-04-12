@@ -15,7 +15,7 @@
 							"text": ":truck: Planifier",
 							"emoji": true
 						},
-						"value": "plan"
+						"value": "shipment_schedule"
 					},
 					{
 						"text": {
@@ -23,7 +23,7 @@
 							"text": ":house: Livré",
 							"emoji": true
 						},
-						"value": "plan"
+						"value": "shipment_delivered"
 					},
 					{
 						"text": {
