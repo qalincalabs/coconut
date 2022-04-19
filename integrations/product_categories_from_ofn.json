@@ -1,0 +1,269 @@
+{
+  "name": "product categories from ofn",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "=https://openfoodnetwork.be/api/v0/taxonomies/{{$json[\"id\"]}}/taxons/",
+        "options": {}
+      },
+      "name": "Get OFN taxons",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        720,
+        460
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "=https://openfoodnetwork.be/api/v0/taxonomies/{{$json[\"id\"]}}/jstree",
+        "options": {}
+      },
+      "name": "Get OFN taxonomy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        720,
+        180
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const category = {\n  id: \"https://openfoodnetwork.be/categories/\" + item.attr.id,\n  name: item.attr.name,\n  hierarchyLevel: 1\n}\n\ncategory.name = category.name.charAt(0) + category.name.substring(1).toLowerCase();\n\nreturn category;"
+      },
+      "name": "Taxonomy to category",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        920,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Code here will run only once, no matter how many input items there are.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.function\n\n// Loop over inputs and add a new field called 'myNewField' to the JSON of each one\n\nconst arr = []\n\nfor (item of items) {\n  for (subItem of item.json) {\n\n    const category = {\n      id: \"https://openfoodnetwork.be/categories/\" + subItem.id,\n      name: subItem.name,\n      parent: {\n        id: \"https://openfoodnetwork.be/categories/\" + subItem.parent_id\n      },\n      hierarchyLevel: 2\n    }\n\n    category.name = category.name.charAt(0) + category.name.substring(1).toLowerCase();\n\n    arr.push({json: category})\n  }\n}\n\nreturn arr;"
+      },
+      "name": "Taxons to category",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        920,
+        460
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation insertOneProductCategory($productCategory: ProductCategoryInsertInput!) {\n  insertOneProductCategory(data: $productCategory) {\n    _id\n  }\n}",
+        "variables": "={\n \"productCategory\": {{JSON.stringify($node[\"Categories insert\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$node[\"Access token\"].json.access_token}}"
+            }
+          ]
+        }
+      },
+      "name": "GraphQL",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/auth/providers/api-key/login",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={  \"key\": \"{{ $env.COCONUT_MONGO_REALM_API_KEY }}\"}"
+      },
+      "name": "Access token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "\nitems.map(i => i.json.classification = {link: \"624abed6228d3e721b5cc3c4\"})\n\nconst arr = items.filter(i => i.json.hierarchyLevel == 1)\n\narr.map(i => i.json.children = {\n  create: items.filter(i2 => i2.json.hierarchyLevel == 2 && i2.json.parent != null && i2.json.parent.id == i.json.id)\n               .map(i3 => { delete i3.json.parent ;return i3.json})\n})\n\narr.filter(i => i.json.children.create.length ==0).map(i=> delete i.json.children)\n\nreturn arr;"
+      },
+      "name": "Categories insert",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "sheetId": "1BNj8Q_oDGzujF6wRvpc6rTfzvXuGCbq4aH40Q4g2cMM",
+        "range": "A:A",
+        "options": {}
+      },
+      "name": "Get OFN taxonomy ids",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        440,
+        300
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "3",
+          "name": "Digicirco Google"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Get OFN taxonomy ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get OFN taxonomy": {
+      "main": [
+        [
+          {
+            "node": "Taxonomy to category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get OFN taxons": {
+      "main": [
+        [
+          {
+            "node": "Taxons to category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Taxonomy to category": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Taxons to category": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Categories insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Access token": {
+      "main": [
+        [
+          {
+            "node": "GraphQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categories insert": {
+      "main": [
+        [
+          {
+            "node": "Access token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get OFN taxonomy ids": {
+      "main": [
+        [
+          {
+            "node": "Get OFN taxons",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get OFN taxonomy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": 9
+}
