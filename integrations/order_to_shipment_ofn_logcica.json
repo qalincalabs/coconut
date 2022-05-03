@@ -147,7 +147,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const a = item.ship_address\nitem.ship_address.mapsSearchQuery = encodeURI(`${a.address1},${a.address2},${a.city},${a.state_name},${a.country_name}`);\nitem.itemsQuantitySum = item.line_items.reduce((acc, cur) => acc + cur.quantity,0);\nreturn item;"
+        "functionCode": "const a = item.ship_address\nitem.ship_address.mapsSearchQuery = `${a.address1} ${a.address2}, ${a.zipcode} ${a.city}, ${a.country_name}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.line_items.reduce((acc, cur) => acc + cur.quantity,0);\nreturn item;"
       },
       "name": "Enrich",
       "type": "n8n-nodes-base.functionItem",
@@ -230,7 +230,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const ofnOrder = $node[\"Enrich\"].json\nconst mapsShippingGeo = $node[\"Geocode\"].json.results[0].geometry.location\nconst order = \n{\n    number: ofnOrder.number,\n    date: new Date(ofnOrder.created_at).toISOString(),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name,\n      workspace: {\n        enterprise: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id]\n        }\n      }\n    },\n    broker: {\n      name: \"OFN\",\n      workspace: {\n        marketplace: {\n          key: \"ofn-be\"\n        }\n      }\n    },\n    lines: ofnOrder.line_items.map(i => ({\n        name: i.variant.name_to_display,\n        item: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/catalogs/main/items/\" + i.variant.id],\n          name: i.variant.name_to_display,\n        },\n        product: {\n          name: i.variant.name_to_display,\n          ids: [\"https://openfoodnetwork.be/variants/\" + i.variant.id],\n        },\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      },\n      place: {\n        ids: [\"https://openfoodnetwork.be/addresses/\"+ ofnOrder.ship_address.id],\n        address: {\n          street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n          postalCode: ofnOrder.ship_address.zipcode,\n          locality: ofnOrder.ship_address.city,\n          country: {\n            name: ofnOrder.ship_address.country_name\n          }\n        },\n        geo:{\n          type:\"Point\",\n          coordinates:[mapsShippingGeo.lng,mapsShippingGeo.lat]\n        }\n      }\n    },\n    shippingMethod: {\n      ids: [\"https://openfoodnetwork.be/shippingmethods/\"+ofnOrder.shipping_method.id],\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
+        "functionCode": "\nfunction slugify(string) {\n  const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìıİłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'\n  const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'\n  const p = new RegExp(a.split('').join('|'), 'g')\n\n  return string.toString().toLowerCase()\n    .replace(/\\s+/g, '-') // Replace spaces with -\n    .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters\n    .replace(/&/g, '-and-') // Replace & with 'and'\n    .replace(/[^\\w\\-]+/g, '') // Remove all non-word characters\n    .replace(/\\-\\-+/g, '-') // Replace multiple - with single -\n    .replace(/^-+/, '') // Trim - from start of text\n    .replace(/-+$/, '') // Trim - from end of text\n}\n\nconst ofnOrder = $node[\"Enrich\"].json\nconst mapsShippingGeo = $node[\"Geocode\"].json.results[0].geometry.location\nconst order = \n{\n    number: ofnOrder.number,\n    date: new Date(ofnOrder.created_at).toISOString(),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name,\n      workspace: {\n        enterprise: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id]\n        }\n      }\n    },\n    broker: {\n      name: \"OFN\",\n      workspace: {\n        marketplace: {\n          key: \"ofn-be\"\n        }\n      }\n    },\n    lines: ofnOrder.line_items.map(i => ({\n        name: i.variant.name_to_display,\n        item: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/catalogs/main/items/\" + i.variant.id],\n          name: i.variant.name_to_display,\n        },\n        product: {\n          name: i.variant.name_to_display,\n          ids: [\"https://openfoodnetwork.be/variants/\" + i.variant.id],\n          group: {\n            name: i.variant.product_name,\n            externalGetUrl: \"https://openfoodnetwork.be/api/v0/products/\" + slugify(i.variant.product_name)\n          }\n        },\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      },\n      place: {\n        ids: [\"https://openfoodnetwork.be/addresses/\"+ ofnOrder.ship_address.id],\n        address: {\n          street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n          postalCode: ofnOrder.ship_address.zipcode,\n          locality: ofnOrder.ship_address.city,\n          country: {\n            name: ofnOrder.ship_address.country_name\n          }\n        },\n        geo:{\n          type:\"Point\",\n          coordinates:[mapsShippingGeo.lng,mapsShippingGeo.lat]\n        }\n      }\n    },\n    shippingMethod: {\n      ids: [\"https://openfoodnetwork.be/shippingmethods/\"+ofnOrder.shipping_method.id],\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
       },
       "name": "Map order",
       "type": "n8n-nodes-base.functionItem",
@@ -285,8 +285,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        3440,
-        -20
+        4180,
+        -200
       ]
     },
     {
@@ -354,8 +354,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        3060,
-        -20
+        3800,
+        -200
       ]
     },
     {
@@ -412,7 +412,7 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2560,
+        2600,
         -200
       ]
     },
@@ -424,7 +424,7 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        2300,
+        2400,
         -200
       ]
     },
@@ -436,8 +436,8 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        2300,
-        -360
+        2400,
+        -400
       ]
     },
     {
@@ -445,7 +445,7 @@
         "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
         "requestFormat": "json",
         "query": "mutation upsertProduct($query: ProductQueryInput!, $data: ProductInsertInput!) {\n  upsertOneProduct(query: $query, data: $data) {\n    _id\n    name\n    owner {\n     workspace {\n       name\n     }\n    }\n  }\n}",
-        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Products\"].json[\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Products\"].json)}}\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Enrich product\"].json[\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Enrich product\"].json)}}\n}",
         "headerParametersUi": {
           "parameter": [
             {
@@ -459,8 +459,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2560,
-        -360
+        3400,
+        -400
       ]
     },
     {
@@ -472,8 +472,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 1,
       "position": [
-        2820,
-        -20
+        3560,
+        -200
       ]
     },
     {
@@ -484,8 +484,76 @@
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        3260,
-        -20
+        4000,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "={{$json[\"group\"][\"externalGetUrl\"]}}",
+        "options": {}
+      },
+      "name": "Get productGroup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        -580
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const productCategory = $node[\"Get product category\"].json.data.category\n\nitem.categories = {\n  link: [productCategory._id]\n}\n\ndelete item.group\n\nreturn item;"
+      },
+      "name": "Enrich product",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        3220,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "query getProductCategory($id: String!) {\n  category: productCategory(query: {id: $id}) {\n    _id\n    id\n    name\n  }\n}",
+        "variables": "={\n \"id\":  \"https://openfoodnetwork.be/categories/{{$json[\"category_id\"]}}\"\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get product category",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2780,
+        -580
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        -400
       ]
     }
   ],
@@ -712,9 +780,14 @@
       "main": [
         [
           {
-            "node": "Upsert products",
+            "node": "Get productGroup",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -757,6 +830,50 @@
         [
           {
             "node": "GraphQL insert order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get productGroup": {
+      "main": [
+        [
+          {
+            "node": "Get product category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich product": {
+      "main": [
+        [
+          {
+            "node": "Upsert products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get product category": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Enrich product",
             "type": "main",
             "index": 0
           }
