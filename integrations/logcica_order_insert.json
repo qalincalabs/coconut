@@ -39,7 +39,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const a = item.shippingAddress\nitem.shippingAddress.mapsSearchQuery = `${a.street}, ${a.postalCode} ${a.locality}, ${a.country.name}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.lines.reduce((acc, cur) => acc + cur.quantity.value,0);\nitem.url = item.url ?? \"https://openfoodnetwork.be/admin/orders/\" + item.number;\nreturn item;"
+        "functionCode": "const a = item.shippingAddress\nitem.shippingAddress.mapsSearchQuery = `${a.street}, ${a.postalCode} ${a.locality}, ${a.country.name}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.lines.reduce((acc, cur) => acc + cur.quantity.value,0);\nitem.url = item.url\nreturn item;"
       },
       "name": "Enrich",
       "type": "n8n-nodes-base.functionItem",
