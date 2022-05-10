@@ -1,0 +1,440 @@
+{
+  "name": "logcica order hook ofn",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        100,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "name": "Time trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "sheetId": "14UW1VPd6AMLknrcV-nzJyN82QdZBuwDYFvq5y40si_w",
+        "range": "order-to-shipment-ofn-purplship!A:B",
+        "options": {}
+      },
+      "name": "Get subscriptions",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        280,
+        220
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "3",
+          "name": "Digicirco Google"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "https://openfoodnetwork.be/api/v0/orders",
+        "options": {
+          "splitIntoItems": false
+        },
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "q[created_at_gt]",
+              "value": "={{new Date(new Date().setDate(new Date().getDate()-1)).toISOString().slice(0, 10)}}"
+            },
+            {
+              "name": "q[distributor_id_eq]",
+              "value": "={{$json[\"enterpriseId\"]}}"
+            },
+            {
+              "name": "q[state_eq]",
+              "value": "complete"
+            }
+          ]
+        }
+      },
+      "name": "Get orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        450,
+        220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "=https://openfoodnetwork.be/api/v0/orders/{{$json[\"number\"]}}",
+        "options": {}
+      },
+      "name": "Get order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        280
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sheetId": "1mP7r4GhvB5TLV8KLtdKi7LW21wk2fL0IRrA2V1uc3Is",
+        "range": "orders!A:A",
+        "options": {}
+      },
+      "name": "Latest orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        620,
+        400
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleApi": {
+          "id": "3",
+          "name": "Digicirco Google"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "removeKeyMatches",
+        "propertyName1": "number",
+        "propertyName2": "number"
+      },
+      "name": "Keep new",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        780,
+        270
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const newItem = {\n  number: item.number,\n  createdTime: new Date().toISOString()\n}\n\nreturn newItem;"
+      },
+      "name": "Latest order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        940,
+        270
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "1mP7r4GhvB5TLV8KLtdKi7LW21wk2fL0IRrA2V1uc3Is",
+        "range": "orders!A:B",
+        "options": {
+          "valueInputMode": "RAW"
+        }
+      },
+      "name": "Append to latest orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        270
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleApi": {
+          "id": "3",
+          "name": "Digicirco Google"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "\nconst ofnOrder = $node[\"Get order\"].json\nconst ofnProducts = $items(\"Get product\").map(p => (p.json))\n\nconst order = \n{\n    number: ofnOrder.number,\n    date: new Date(ofnOrder.created_at).toISOString(),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name,\n      workspace: {\n        ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/main\"]\n      }\n    },\n    broker: {\n      name: \"OFN\",\n      workspace: {\n        marketplace: {\n          key: \"ofn-be\"\n        }\n      }\n    },\n    lines: ofnOrder.line_items.map(i => ({\n        name: i.variant.name_to_display,\n        item: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/catalogs/main/items/\" + i.variant.id],\n          name: i.variant.name_to_display,\n        },\n        product: {\n          name: i.variant.name_to_display,\n          ids: [\"https://openfoodnetwork.be/variants/\" + i.variant.id],\n          group: {\n            ids: [\"https://openfoodnetwork.be/products/\" + ofnProducts.find(p => p.name == i.variant.product_name).id],\n            name: i.variant.product_name\n          },\n          categories: [{\n            ids: [\"https://openfoodnetwork.be/categories/\" + ofnProducts.find(p => p.name == i.variant.product_name).category_id],\n          }]\n        },\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      },\n      place: {\n        ids: [\"https://openfoodnetwork.be/addresses/\"+ ofnOrder.ship_address.id],\n        address: {\n          street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n          postalCode: ofnOrder.ship_address.zipcode,\n          locality: ofnOrder.ship_address.city,\n          country: {\n            name: ofnOrder.ship_address.country_name\n          }\n        }\n      }\n    },\n    shippingMethod: {\n      ids: [\"https://openfoodnetwork.be/shippingmethods/\" + ofnOrder.shipping_method.id],\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
+      },
+      "name": "Map order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.reduce((acc,val) => acc = acc.concat(val.json.orders),[]) .map(item => {\n  return {\n    json: item\n  }\n})\n"
+      },
+      "name": "Order list",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        620,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "={{$json[\"variant\"][\"product\"][\"getUrl\"]}}",
+        "options": {}
+      },
+      "name": "Get product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        460
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "function slugify(string) {\n  const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìıİłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'\n  const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'\n  const p = new RegExp(a.split('').join('|'), 'g')\n\n  return string.toString().toLowerCase()\n    .replace(/\\s+/g, '-') // Replace spaces with -\n    .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters\n    .replace(/&/g, '-and-') // Replace & with 'and'\n    .replace(/[^\\w\\-]+/g, '') // Remove all non-word characters\n    .replace(/\\-\\-+/g, '-') // Replace multiple - with single -\n    .replace(/^-+/, '') // Trim - from start of text\n    .replace(/-+$/, '') // Trim - from end of text\n}\n\nitem.variant.product = {\n  getUrl: \"https://openfoodnetwork.be/api/v0/products/\" + slugify(item.variant.product_name)\n}\n\nreturn item;"
+      },
+      "name": "Enrich line item",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "line_items",
+        "options": {}
+      },
+      "name": "Line items",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "source": "localFile",
+        "workflowPath": "/Users/olivier/.n8n/data/logcica_order_insert.json"
+      },
+      "name": "Execute Workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        2380,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Time trigger": {
+      "main": [
+        [
+          {
+            "node": "Get subscriptions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get subscriptions": {
+      "main": [
+        [
+          {
+            "node": "Get orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get order": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Line items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Latest orders": {
+      "main": [
+        [
+          {
+            "node": "Keep new",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get orders": {
+      "main": [
+        [
+          {
+            "node": "Order list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep new": {
+      "main": [
+        [
+          {
+            "node": "Latest order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Latest order": {
+      "main": [
+        [
+          {
+            "node": "Append to latest orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to latest orders": {
+      "main": [
+        [
+          {
+            "node": "Get order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order list": {
+      "main": [
+        [
+          {
+            "node": "Keep new",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Map order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get product": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Enrich line item": {
+      "main": [
+        [
+          {
+            "node": "Get product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Line items": {
+      "main": [
+        [
+          {
+            "node": "Enrich line item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map order": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": 12
+}

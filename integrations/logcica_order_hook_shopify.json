@@ -1,0 +1,310 @@
+{
+  "name": "logcica order hook shopify",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://testlogcica.myshopify.com/admin/api/2022-04/graphql.json",
+        "requestFormat": "json",
+        "query": "mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {\n  webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {\n    userErrors {\n      field\n      message\n    }\n    webhookSubscription {\n      id\n    }\n  }\n}",
+        "variables": "={\n\"topic\": \"ORDERS_CREATE\",\n\"webhookSubscription\": {\n\"callbackUrl\": \"{{$json[\"url\"]}}\",\n\"format\": \"JSON\",\n\"includeFields\": [\n\"id\",\n\"name\"\n]\n}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{$env.LOGCICA_SHOPIFY_ACCESS_KEY}}"
+            }
+          ]
+        }
+      },
+      "name": "Create webhook",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        60,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b536d0a4-04b0-4557-ad8c-e43408a5effe",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        260
+      ],
+      "webhookId": "b536d0a4-04b0-4557-ad8c-e43408a5effe"
+    },
+    {
+      "parameters": {
+        "endpoint": "https://testlogcica.myshopify.com/admin/api/2022-04/graphql.json",
+        "query": "{\n  webhookSubscriptions(first: 3) {\n    edges {\n      node {\n        id\n        endpoint {\n          __typename\n              ... on WebhookHttpEndpoint {\n              callbackUrl\n            }\n        }\n        includeFields\n        updatedAt\n        legacyResourceId\n        format\n        topic\n      }\n    }\n  }\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{$env.LOGCICA_SHOPIFY_ACCESS_KEY}}"
+            }
+          ]
+        }
+      },
+      "name": "Get webhook",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        280,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://testlogcica.myshopify.com/admin/api/2022-04/graphql.json",
+        "requestFormat": "json",
+        "query": "mutation webhookSubscriptionDelete($id: ID!) {\n  webhookSubscriptionDelete(id: $id) {\n    deletedWebhookSubscriptionId\n    userErrors {\n      field\n      message\n    }\n  }\n}",
+        "variables": "={\n    \"id\": \"{{$json[\"data\"][\"webhookSubscriptions\"][\"edges\"][0][\"node\"][\"id\"]}}\"\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{$env.LOGCICA_SHOPIFY_ACCESS_KEY}}"
+            }
+          ]
+        }
+      },
+      "name": "Delete webhook",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        520,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://testlogcica.myshopify.com/admin/api/2022-04/graphql.json",
+        "query": "={\n  shop {\n    id\n    name\n    billingAddress {\n      address1\n      address2\n      countryCode\n      countryCodeV2\n      country\n      city\n      id\n      latitude\n      longitude\n      zip\n    }\n  }\n  order(id: \"gid://shopify/Order/{{$json[\"id\"]}}\") {\n    id\n    name\n    confirmed\n    createdAt\n    totalWeight\n    currencyCode\n    requiresShipping\n    shippingAddress {\n      name\n      address1\n      address2\n      countryCode\n      countryCodeV2\n      country\n      city\n      id\n      latitude\n      longitude\n      zip\n    }\n    lineItems(first: 120) {\n      nodes {\n        name\n        quantity\n        product {\n          id\n          createdAt\n          title\n          customProductType\n          standardizedProductType {\n            productTaxonomyNode {\n              id\n              name\n            }\n          }\n          vendor\n          translations(locale: \"nl\") {\n            key\n            value\n            locale\n          }\n        }\n        variant {\n          id\n          createdAt\n          sku\n          title\n          displayName \n          weight\n          weightUnit\n          barcode\n          price\n          displayName\n          deliveryProfile {\n            id\n          }\n          translations(locale: \"fr\") {\n            key\n            value\n          }\n        }\n      }\n    }\n  }\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "X-Shopify-Access-Token",
+              "value": "={{$env.LOGCICA_SHOPIFY_ACCESS_KEY}}"
+            }
+          ]
+        }
+      },
+      "name": "Get order",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        380,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const event = item.body ?? {}\n\nreturn event;"
+      },
+      "name": "Order event",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "id",
+              "value": "gid://shopify/Order/4750201848059"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "test order event init",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const externalOrder = $node[\"Get order\"].json.data.order\nconst externalShop = $node[\"Get order\"].json.data.shop\n\nconst address = {\n  name: externalOrder.shippingAddress.name,\n  street: externalOrder.shippingAddress.address1 + \", \" + externalOrder.shippingAddress.address2,\n  postalCode: externalOrder.shippingAddress.zip,\n  locality: externalOrder.shippingAddress.city,\n  country: {\n    name: externalOrder.shippingAddress.country\n  },\n  geo:{\n    type:\"Point\",\n    coordinates:[externalOrder.shippingAddress.longitude,externalOrder.shippingAddress.latitude]\n  }\n}\n\nconst order = \n{\n  number: externalOrder.name,\n  date: externalOrder.createdAt,\n  url: \"https://\" + externalShop.name + \".myshopify.com/admin/orders/\" + externalOrder.id.split(/[\\/]+/).pop(), // TODO a bit of a hack\n  confirmed: true,\n  buyer: {\n    name: externalOrder.shippingAddress.name, // TODO not totally correct\n  },\n  seller: {\n    name: externalShop.name,\n    workspace: {\n      ids: [externalShop.id]\n    }\n  },\n  broker: {\n    name: \"Shopify\",\n    workspace: {\n      marketplace: {\n        key: \"shopify\"\n      }\n    }\n  },\n  lines: externalOrder.lineItems.nodes.map(i => ({\n      name: i.name,\n      product: {\n        ids: [i.variant.id],\n        createdAt: i.variant.createdAt,\n        name: i.variant.displayName,\n        group: {\n          ids: [i.variant.id],\n          createdAt: i.variant.createdAt,\n          name: i.product.title\n        },\n        categories: [\n          {\n            ids: [\"gid://shopify/Category/none\"]\n          }\n        ]\n      },\n      item: { // TODO item is a copy of product so far\n        ids: [i.variant.id],\n        createdAt: i.variant.createdAt,\n        name: i.variant.displayName\n      },\n      quantity: {\n        value:  i.quantity\n      }\n    })),\n  shippingMethod: {\n    ids: [\"gid://shopify/ShippingMethod/none\"],\n    name: \"Pas de méthode de livraison\"\n  },\n  shippingAddress: {\n    name: address.name,\n    street: address.street,\n    postalCode: address.postalCode,\n    locality: address.locality,\n    country: address.country,\n    place: {\n      ids: [externalOrder.shippingAddress.id],\n      address: {\n        street: address.street,\n        postalCode: address.postalCode,\n        locality: address.locality,\n        country: address.country,\n      },\n      geo:address.geo\n    }\n  }\n}\n\n/*\nshippingMethod: {\n  ids: [\"https://openfoodnetwork.be/shippingmethods/\"+externalOrder.shipping_method.id],\n  name: externalOrder.shipping_method.name,\n  description: externalOrder.shipping_method.description\n}\n*/\n\nreturn order;"
+      },
+      "name": "Map order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        560,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        180,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "source": "localFile",
+        "workflowPath": "/Users/olivier/.n8n/data/logcica_order_insert.json"
+      },
+      "name": "Execute insert external order workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        740,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "url"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        60
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Order event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get order": {
+      "main": [
+        [
+          {
+            "node": "Map order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "test order event init",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order event": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test order event init": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Get order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map order": {
+      "main": [
+        [
+          {
+            "node": "Execute insert external order workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get webhook": {
+      "main": [
+        [
+          {
+            "node": "Delete webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Create webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": 8
+}

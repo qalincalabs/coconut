@@ -1,0 +1,585 @@
+{
+  "name": "logcica order insert",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        640,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "acteur-comptoir-demo-ofn",
+        "text": "=",
+        "jsonParameters": true,
+        "attachments": [],
+        "otherOptions": {
+          "unfurl_links": false,
+          "unfurl_media": false
+        },
+        "blocksJson": "= [\n {\n \"type\": \"section\",\n \"text\": {\n \"type\": \"mrkdwn\",\n \"text\": \":postbox: *Nouvel envoi :* Commande <{{$json[\"url\"]}}|{{$json[\"number\"]}}> pour {{$json[\"seller\"][\"name\"]}} via *{{$json[\"broker\"][\"workspace\"][\"marketplace\"][\"key\"]}}*\"\n },\n \"accessory\": {\n \"type\": \"overflow\",\n \"options\": [\n {\n \"text\": {\n \"type\": \"plain_text\",\n \"text\": \":truck: Planifier\",\n \"emoji\": true\n },\n \"value\": \"shipment_schedule\"\n },\n {\n \"text\": {\n \"type\": \"plain_text\",\n \"text\": \":house: Livré\",\n \"emoji\": true\n },\n \"value\": \"shipment_delivered\"\n },\n {\n \"text\": {\n \"type\": \"plain_text\",\n \"text\": \":octagonal_sign: Annuler\",\n \"emoji\": true\n },\n \"value\": \"shipment_cancel\"\n }\n ]\n }\n },\n {\n \"type\": \"context\",\n \"elements\": [\n {\n \"type\": \"mrkdwn\",\n \"text\": \":aerial_tramway: {{$json[\"shippingMethod\"][\"name\"]}}\"\n },\n {\n \"type\": \"mrkdwn\",\n \"text\": \":round_pushpin: {{$json[\"buyer\"][\"name\"]}}, <https://maps.google.com/?q={{$json[\"shippingAddress\"][\"mapsSearchQuery\"]}}|{{$json[\"shippingAddress\"][\"street\"]}}, {{$json[\"shippingAddress\"][\"postalCode\"]}} {{$json[\"shippingAddress\"][\"locality\"]}}>\"\n },\n {\n \"type\": \"mrkdwn\",\n \"text\": \":label: {{$json[\"itemsQuantitySum\"]}} produit(s)\"\n }\n ]\n }\n ]"
+      },
+      "name": "Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        420
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "11",
+          "name": "coconut bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const a = item.shippingAddress\nitem.shippingAddress.mapsSearchQuery = `${a.street}, ${a.postalCode} ${a.locality}, ${a.country.name}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.lines.reduce((acc, cur) => acc + cur.quantity.value,0);\nitem.url = item.url ?? \"https://openfoodnetwork.be/admin/orders/\" + item.number;\nreturn item;"
+      },
+      "name": "Enrich",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://maps.googleapis.com/maps/api/geocode/json",
+        "options": {},
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "address",
+              "value": "={{$node[\"Enrich\"].json[\"shippingAddress\"][\"mapsSearchQuery\"]}}"
+            },
+            {
+              "name": "key",
+              "value": "={{$env.COCONUT_GOOGLE_MAPS_API_KEY}}"
+            }
+          ]
+        }
+      },
+      "name": "Geocode",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation insertOneOrder($order: OrderInsertInput!) {\n  insertOneOrder(data: $order) {\n    number\n  }\n}",
+        "variables": "={\n \"order\": {{JSON.stringify($node[\"Order\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "GraphQL insert order",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        3900,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertPlace($query: PlaceQueryInput!, $data: PlaceInsertInput!) {\n  upsertOnePlace(query: $query, data: $data) {\n    _id\n    name\n    address {\n      postalCode\n      street\n    }\n    owner {\n     workspace {\n       name\n     }\n    }\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Decorated order\"].json[\"shippingAddress\"][\"place\"][\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Decorated order\"].json[\"shippingAddress\"][\"place\"])}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert shipping address place",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        -20
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertShippingMethod($query: ShippingMethodQueryInput!, $data: ShippingMethodInsertInput!) {\n  upsertOneShippingMethod(query: $query, data: $data) {\n    _id\n    name\n    owner {\n      workspace {\n        name\n      }\n    }\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Decorated order\"].json[\"shippingMethod\"][\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Decorated order\"].json[\"shippingMethod\"])}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert shipping method",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "query getOrderRelationships($shippingAddressPlaceIds: [String!]!, $shippingMethodIds: [String!]!, $linesProductsIds: [String!]!, $linesCatalogItemsIds: [String!]!) {\n  shippingAddressPlace: place(query: {ids_in: $shippingAddressPlaceIds}) {\n    _id\n    address {\n      street\n      postalCode\n    }\n  }\n  shippingMethod: shippingMethod(query: {ids_in: $shippingMethodIds}) {\n    _id\n    name\n  }\n  lineProducts: products(query: {ids_in: $linesProductsIds}) {\n    _id\n    ids\n    name\n  }\n  lineItems: catalogItems(query: {ids_in: $linesCatalogItemsIds}) {\n    _id\n    ids\n    name\n  }\n}",
+        "variables": "={\n  \"shippingMethodIds\": {{JSON.stringify($node[\"Decorated order\"].json[\"shippingMethod\"][\"ids\"])}},\n  \"shippingAddressPlaceIds\": {{JSON.stringify($node[\"Decorated order\"].json[\"shippingAddress\"][\"place\"][\"ids\"])}},\n  \"linesProductsIds\":{{JSON.stringify($node[\"Decorated order\"].json[\"productsIds\"])}},\n  \"linesCatalogItemsIds\":{{JSON.stringify($node[\"Decorated order\"].json[\"catalogItemsIds\"])}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get order relationships",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        3500,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "query getOrderRelationships($sellerWorkspaceIds: [String!]!, $brokerMarketplaceKey: String!) {\n  sellerWorkspace: workspace(query: {ids_in: $sellerWorkspaceIds}) {\n    _id\n    name\n  }\n  brokerWorkspace: workspace(query: {marketplace: {key: $brokerMarketplaceKey}}) {\n    _id\n    name\n  }\n}",
+        "variables": "={\n  \"sellerWorkspaceIds\": {{JSON.stringify($json[\"seller\"][\"workspace\"][\"ids\"])}},\n  \"brokerMarketplaceKey\": \"{{$json[\"broker\"][\"workspace\"][\"marketplace\"][\"key\"]}}\"\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get order first relationships",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const order = $node[\"Enrich\"].json\nconst orderRelationships = $node[\"Get order first relationships\"].json.data\n\norder.seller.workspace =  {\n  link: orderRelationships.sellerWorkspace._id\n}\n\norder.broker.workspace =  {\n  link: orderRelationships.brokerWorkspace._id\n}\n\nif(order.shippingAddress.place.geo == null){\n  const mapsShippingGeo = $node[\"Geocode\"].json.results[0].geometry.location\n  order.shippingAddress.place.geo = {\n    type: \"Point\",\n    coordinates: [mapsShippingGeo.lng, mapsShippingGeo.lat]\n  }\n}\n\nconst owner = {\n  workspace: {\n    link: order.seller.workspace.link\n  }\n}\n\norder.shippingAddress.place.owner = owner\n\nif(order.shippingMethod != null)\n  order.shippingMethod.owner = owner\n\norder.lines.forEach(l => l.product.owner = owner)\norder.lines.forEach(l => l.item.owner = owner)\n\norder.products = order.lines.map(l => l.product);\norder.productsIds = order.lines.reduce((acc,val) => acc = acc.concat(val.product.ids),[]);\n\norder.catalogItems = order.lines.map(l => l.item)\norder.catalogItemsIds = order.lines.reduce((acc,val) => acc = acc.concat(val.item.ids),[]);\nreturn order"
+      },
+      "name": "Decorated order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertCatalogItem($query: CatalogItemQueryInput!, $data: CatalogItemInsertInput!) {\n  upsertOneCatalogItem(query: $query, data: $data) {\n    _id\n    name\n    owner {\n     workspace {\n       name\n     }\n    }\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Catalog items\"].json[\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Catalog items\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert catalog items",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.reduce((acc, val) => acc = acc.concat(val.json.catalogItems),[]).map(i => ({json: i}))"
+      },
+      "name": "Catalog items",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.reduce((acc, val) => acc = acc.concat(val.json.products),[]).map(i => ({json: i}))"
+      },
+      "name": "Products",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertProduct($query: ProductQueryInput!, $data: ProductInsertInput!) {\n  upsertOneProduct(query: $query, data: $data) {\n    _id\n    name\n    owner {\n     workspace {\n       name\n     }\n    }\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Enrich product\"].json[\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Enrich product\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert products",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        3260,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const order = $node[\"Decorated order\"].json\nconst orderRelationships = $node[\"Get order relationships\"].json.data\n\norder.shippingAddress.place = {\n  link: orderRelationships.shippingAddressPlace._id\n}\n\norder.shippingMethod = {\n  link: orderRelationships.shippingMethod._id\n}\n\norder.lines.forEach(l => {\n  l.product = {\n    _id: orderRelationships.lineProducts.find(p => p.ids.includes(l.product.ids[0]))._id\n  }\n  l.item = {\n    _id: orderRelationships.lineItems.find(p => p.ids.includes(l.item.ids[0]))._id\n  }\n})\n\ndelete order.products \ndelete order.productsIds\ndelete order.catalogItems\ndelete order.catalogItemsIds\ndelete order.shippingAddress.mapsSearchQuery\ndelete order.itemsQuantitySum\n\nreturn order"
+      },
+      "name": "Order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        3720,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const productCategory = $node[\"Get product category\"].json.data.category\nconst product = $node[\"Products\"].json\n\nif(productCategory != null)\n  product.categories = {\n    link: [productCategory._id]\n  }\n\n\ndelete product.group\n\nreturn product;"
+      },
+      "name": "Enrich product",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2800,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "query getProductCategory($id: String!) {\n  category: productCategory(query: {id: $id}) {\n    _id\n    id\n    name\n  }\n}",
+        "variables": "={\n \"id\":  \"{{$json[\"categories\"][0][\"ids\"][0]}}\"\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get product category",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2580,
+        -400
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const json = {\n  \"number\": \"#1009\",\n  \"date\": \"2022-05-09T10:06:04Z\",\n  \"confirmed\": true,\n  \"url\": \"https://testlogcica.myshopify.com/admin/orders/4751133999355\",\n  \"buyer\": {\n    \"name\": \"Olivier Wouters\"\n  },\n  \"seller\": {\n    \"name\": \"testlogcica\",\n    \"workspace\": {\n      \"ids\": [\"gid://shopify/Shop/63777276155\"]\n    }\n  },\n  \"broker\": {\n    \"name\": \"Shopify\",\n    \"workspace\": {\n      \"marketplace\": {\n        \"key\": \"shopify\"\n      }\n    }\n  },\n  \"lines\": [\n    {\n      \"name\": \"Sac de salade - Orange\",\n      \"product\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183147259\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Orange\",\n        \"group\": {\n          \"ids\": [\"gid://shopify/ProductVariant/42999183147259\"],\n          \"createdAt\": \"2022-05-09T10:03:52Z\",\n          \"name\": \"Sac de salade\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183147259\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Orange\"\n      },\n      \"quantity\": {\n        \"value\": 1\n      }\n    },\n    {\n      \"name\": \"Sac de salade - Purple\",\n      \"product\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183180027\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Purple\",\n        \"group\": {\n          \"ids\": [\"gid://shopify/ProductVariant/42999183180027\"],\n          \"createdAt\": \"2022-05-09T10:03:52Z\",\n          \"name\": \"Sac de salade\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183180027\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Purple\"\n      },\n      \"quantity\": {\n        \"value\": 1\n      }\n    }\n  ],\n  \"shippingMethod\": {\n    \"ids\": [\"gid://shopify/ShippingMethod/none\"],\n    \"name\": \"Pas de méthode de livraison\"\n  },\n  \"shippingAddress\": {\n    \"name\": \"Olivier Wouters\",\n    \"street\": \"Rue d'Anloy, 25\",\n    \"postalCode\": \"6853\",\n    \"locality\": \"Paliseul\",\n    \"country\": {\n      \"name\": \"Belgium\"\n    },\n    \"place\": {\n      \"ids\": [\"gid://shopify/MailingAddress/16163439018235?model_name=Address\"],\n      \"address\": {\n        \"street\": \"Rue d'Anloy, 25\",\n        \"postalCode\": \"6853\",\n        \"locality\": \"Paliseul\",\n        \"country\": {\n          \"name\": \"Belgium\"\n        }\n      },\n      \"geo\": {\n        \"type\": \"Point\",\n        \"coordinates\": [5.1725239, 49.9291176]\n      }\n    }\n  }\n}\n\nreturn json;"
+      },
+      "name": "Test order init data",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        880,
+        260
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"shippingAddress\"][\"place\"][\"geo\"] == null}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "If not geocoded",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        -20
+      ]
+    }
+  ],
+  "connections": {
+    "Enrich": {
+      "main": [
+        [
+          {
+            "node": "Slack",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If not geocoded",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get order first relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert shipping address place": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get order relationships": {
+      "main": [
+        [
+          {
+            "node": "Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert shipping method": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get order first relationships": {
+      "main": [
+        [
+          {
+            "node": "Decorated order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decorated order": {
+      "main": [
+        [
+          {
+            "node": "Upsert shipping address place",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Catalog items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upsert shipping method",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catalog items": {
+      "main": [
+        [
+          {
+            "node": "Upsert catalog items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Products": {
+      "main": [
+        [
+          {
+            "node": "Get product category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert catalog items": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert products": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Get order relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order": {
+      "main": [
+        [
+          {
+            "node": "GraphQL insert order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich product": {
+      "main": [
+        [
+          {
+            "node": "Upsert products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get product category": {
+      "main": [
+        [
+          {
+            "node": "Enrich product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Test order init data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test order init data": {
+      "main": [
+        [
+          {
+            "node": "Enrich",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If not geocoded": {
+      "main": [
+        [
+          {
+            "node": "Geocode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": 5
+}
