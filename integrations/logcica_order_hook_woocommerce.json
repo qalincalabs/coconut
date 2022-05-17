@@ -1,0 +1,389 @@
+{
+  "name": "logcica order hook woocommerce",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b536d0a4-04b0-4557-ad8c-e43408a5effe",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        260
+      ],
+      "webhookId": "e4b4cd93-f325-43a7-ba8f-77c98acf13b0"
+    },
+    {
+      "parameters": {
+        "functionCode": "const event = item.body ?? {}\n\nreturn event;"
+      },
+      "name": "Order event",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const externalOrder = $node[\"Decorated order\"].json\nconst externalShop = $node[\"Map shop\"].json\nconst externalProducts = $items(\"Get product\").map(p => (p.json))\nconst externalVariants = $items(\"Get variant\").map(p => (p.json))\n\nconst shippingAddressName = [\n    externalOrder.shipping.first_name, \n    externalOrder.shipping.last_name, \n    externalOrder.shipping.company\n  ]\n  .filter(n => n).join(\" \")\n\nconst shippingAddressStreet = [\n    externalOrder.shipping.address_1, \n    externalOrder.shipping.address_2\n  ]\n  .filter(n => n).join(\" \")\n\nconst address = {\n  name: shippingAddressName,\n  street: shippingAddressStreet,\n  postalCode: externalOrder.shipping.postcode,\n  locality: externalOrder.shipping.city,\n  country: {\n    code: externalOrder.shipping.country\n  }\n}\n\nconst order = \n{\n  number: externalOrder.order_key,\n  date: externalOrder.date_created,\n  url: externalShop.url + \"/wp-admin/post.php?post=\"+ externalOrder.id +\"&action=edit\",\n  confirmed: true,\n  buyer: {\n    name: shippingAddressName, // TODO not totally correct\n  },\n  seller: {\n    name: externalShop.name,\n    workspace: {\n      ids: externalShop.ids\n    }\n  },\n  broker: {\n    name: \"WooCommerce\",\n    workspace: {\n      marketplace: {\n        key: \"woocommerce\"\n      }\n    }\n  },\n  shippingMethod: {\n    ids: [\"gid://woocommerce/ShippingMethod/none\"],\n    name: \"Pas de méthode de livraison\"\n  },\n  shippingAddress: {\n    name: address.name,\n    street: address.street,\n    postalCode: address.postalCode,\n    locality: address.locality,\n    country: address.country,\n    place: {\n      ids: [\"gid://woocommerce/place/none\"],\n      address: {\n        street: address.street,\n        postalCode: address.postalCode,\n        locality: address.locality,\n        country: address.country,\n      }\n    }\n  }\n}\n\norder.lines = externalOrder.line_items.map(i => {\n  const externalProduct = externalProducts.find(p => p.id == i.product_id)\n  const externalVariant = externalVariants.find(v => v.id == i.variation_id) ?? externalProduct\n  const line = {\n      name: i.name,\n      product: {\n        ids: [ externalShop.url + \"/products/\" +  externalVariant.id ], // TODO : better ids\n        name: externalVariant.name,\n        createdAt: externalVariant.date_created_gmt\n      },\n      item: {\n        ids: [ externalShop.url + \"/catalogitems/\" +  externalVariant.id ], // TODO : better ids\n        name: externalVariant.name,\n        createdAt: externalVariant.date_created_gmt,\n      },\n      quantity: {\n        value:  i.quantity\n      }\n    }\n\n    line.product.categories = externalProduct.categories.map(c => ({\n      ids:  [ externalShop.url + \"/productcategories/\"+ c.id],\n      name: c.name\n    }))\n\n\n    if(externalProduct.id != externalVariant.id)  \n      line.product.group = {\n        ids: [externalShop.url + \"/products/\" +  externalProduct.id],\n        name: externalProduct.name,\n        createdAt: externalProduct.date_created_gmt,\n      }\n\n  return line\n})\n\n/*\nshippingMethod: {\n  ids: [\"https://openfoodnetwork.be/shippingmethods/\"+externalOrder.shipping_method.id],\n  name: externalOrder.shipping_method.name,\n  description: externalOrder.shipping_method.description\n}\n*/\n\nreturn order;"
+      },
+      "name": "Map order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        180,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "source": "localFile",
+        "workflowPath": "/Users/olivier/.n8n/data/logcica_order_insert.json"
+      },
+      "name": "Execute insert external order workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const order =  {\n  \"id\": 139,\n  \"parent_id\": 0,\n  \"status\": \"processing\",\n  \"currency\": \"EUR\",\n  \"version\": \"6.5.1\",\n  \"prices_include_tax\": false,\n  \"date_created\": \"2022-05-17T10:37:23\",\n  \"date_modified\": \"2022-05-17T10:40:27\",\n  \"discount_total\": \"0.00\",\n  \"discount_tax\": \"0.00\",\n  \"shipping_total\": \"0.00\",\n  \"shipping_tax\": \"0.00\",\n  \"cart_tax\": \"0.00\",\n  \"total\": \"2.60\",\n  \"total_tax\": \"0.00\",\n  \"customer_id\": 0,\n  \"order_key\": \"wc_order_ludMH9rT5yQFU\",\n  \"billing\": {\n    \"first_name\": \"Olivier\",\n    \"last_name\": \"Wouters\",\n    \"company\": \"\",\n    \"address_1\": \"Grand rue, 40\",\n    \"address_2\": \"\",\n    \"city\": \"Carlsbourg\",\n    \"state\": \"\",\n    \"postcode\": \"6850\",\n    \"country\": \"BE\",\n    \"email\": \"olivier5741@gmail.com\",\n    \"phone\": \"+32476283271\"\n  },\n  \"shipping\": {\n    \"first_name\": \"Olivier\",\n    \"last_name\": \"Wouters\",\n    \"company\": \"\",\n    \"address_1\": \"Grand rue, 40\",\n    \"address_2\": \"\",\n    \"city\": \"Carlsbourg\",\n    \"state\": \"\",\n    \"postcode\": \"6850\",\n    \"country\": \"BE\",\n    \"phone\": \"+32476283271\"\n  },\n  \"payment_method\": \"bacs\",\n  \"payment_method_title\": \"Virement bancaire\",\n  \"transaction_id\": \"\",\n  \"customer_ip_address\": \"\",\n  \"customer_user_agent\": \"\",\n  \"created_via\": \"admin\",\n  \"customer_note\": \"Ma note client\",\n  \"date_completed\": null,\n  \"date_paid\": \"2022-05-17T10:40:27\",\n  \"cart_hash\": \"\",\n  \"number\": \"139\",\n  \"meta_data\": [\n    {\n      \"id\": 536,\n      \"key\": \"_new_order_email_sent\",\n      \"value\": \"true\"\n    }\n  ],\n  \"line_items\": [\n    {\n      \"id\": 9,\n      \"name\": \"Carotte - Mauve\",\n      \"product_id\": 135,\n      \"variation_id\": 137,\n      \"quantity\": 2,\n      \"tax_class\": \"\",\n      \"subtotal\": \"2.00\",\n      \"subtotal_tax\": \"0.00\",\n      \"total\": \"2.00\",\n      \"total_tax\": \"0.00\",\n      \"taxes\": [],\n      \"meta_data\": [\n        {\n          \"id\": 70,\n          \"key\": \"couleur\",\n          \"value\": \"Mauve\",\n          \"display_key\": \"Couleur\",\n          \"display_value\": \"Mauve\"\n        }\n      ],\n      \"sku\": \"\",\n      \"price\": 1,\n      \"parent_name\": \"Carotte\"\n    },\n    {\n      \"id\": 10,\n      \"name\": \"Gobelets Beeyo 330 Ml\",\n      \"product_id\": 117,\n      \"variation_id\": 0,\n      \"quantity\": 3,\n      \"tax_class\": \"\",\n      \"subtotal\": \"0.60\",\n      \"subtotal_tax\": \"0.00\",\n      \"total\": \"0.60\",\n      \"total_tax\": \"0.00\",\n      \"taxes\": [],\n      \"meta_data\": [],\n      \"sku\": \"\",\n      \"price\": 0.19999999999999998,\n      \"parent_name\": null\n    }\n  ],\n  \"tax_lines\": [],\n  \"shipping_lines\": [\n    {\n      \"id\": 11,\n      \"method_title\": \"Expédition\",\n      \"method_id\": \"local_pickup\",\n      \"instance_id\": \"0\",\n      \"total\": \"0.00\",\n      \"total_tax\": \"0.00\",\n      \"taxes\": [],\n      \"meta_data\": [\n        {\n          \"id\": 85,\n          \"key\": \"test\",\n          \"value\": \"test\",\n          \"display_key\": \"test\",\n          \"display_value\": \"test\"\n        }\n      ]\n    }\n  ],\n  \"fee_lines\": [],\n  \"coupon_lines\": [],\n  \"refunds\": [],\n  \"payment_url\": \"https://www.digicirco.org/commander/order-pay/139/?pay_for_order=true&key=wc_order_ludMH9rT5yQFU\",\n  \"date_created_gmt\": \"2022-05-17T08:37:23\",\n  \"date_modified_gmt\": \"2022-05-17T08:40:27\",\n  \"date_completed_gmt\": null,\n  \"date_paid_gmt\": \"2022-05-17T08:40:27\",\n  \"currency_symbol\": \"€\",\n  \"_links\": {\n    \"self\": [\n      {\n        \"href\": \"https://www.digicirco.org/wp-json/wc/v3/orders/139\"\n      }\n    ],\n    \"collection\": [\n      {\n        \"href\": \"https://www.digicirco.org/wp-json/wc/v3/orders\"\n      }\n    ]\n  }\n}\n\n\nreturn order;"
+      },
+      "name": "Order stub",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const order = $node[\"Decorated order\"].json\n\nfunction getDomain(url, subdomain) {\n    subdomain = subdomain || false;\n\n    url = url.replace(/(https?:\\/\\/)?(www.)?/i, '');\n\n    if (!subdomain) {\n        url = url.split('.');\n        url = url.slice(url.length - 2).join('.');\n    }\n\n    if (url.indexOf('/') !== -1) {\n        return url.split('/')[0];\n    }\n\n    return url;\n}\n\nconst workspace = {\n  ids: [order.shop.url],\n  url: order.shop.url,\n  name: getDomain(order.shop.url),\n  address: {\n    street: [\n      item.find(i => i.id == \"woocommerce_store_address\").value,\n      item.find(i => i.id == \"woocommerce_store_address_2\").value]\n      .filter(i => i).join(\", \") ,\n    postalCode: item.find(i => i.id == \"woocommerce_store_postcode\").value,\n    locality: item.find(i => i.id == \"woocommerce_store_city\").value,\n    country: {\n      code: item.find(i => i.id == \"woocommerce_default_country\").value,\n    }\n  }\n}\n\nreturn workspace;"
+      },
+      "name": "Map shop",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        820,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "item.shop = {\n  url: item._links.self[0].href.split(\"/wp-json\")[0]\n}\n\nreturn item;"
+      },
+      "name": "Decorated order",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        360,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "line_items",
+        "options": {}
+      },
+      "name": "Order items",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        500,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "url": "=https://www.digicirco.org/wp-json/wc/v3/settings/general",
+        "options": {}
+      },
+      "name": "Get general settings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        560,
+        400
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "19",
+          "name": "Digicirco WooCommerce (test)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"variation_id\"] == 0}}"
+            }
+          ]
+        }
+      },
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        640,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "url": "=https://www.digicirco.org/wp-json/wc/v3/products/{{$json[\"product_id\"]}}",
+        "options": {}
+      },
+      "name": "Get product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        820,
+        60
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "19",
+          "name": "Digicirco WooCommerce (test)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "basicAuth",
+        "url": "=https://www.digicirco.org/wp-json/wc/v3/products/{{$json[\"variation_id\"]  }}",
+        "options": {}
+      },
+      "name": "Get variant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        820,
+        220
+      ],
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "19",
+          "name": "Digicirco WooCommerce (test)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Order event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Order stub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order event": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Decorated order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order stub": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Decorated order": {
+      "main": [
+        [
+          {
+            "node": "Order items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get general settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map shop": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Map order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order items": {
+      "main": [
+        [
+          {
+            "node": "Get product",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get general settings": {
+      "main": [
+        [
+          {
+            "node": "Map shop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Get variant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get product": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get variant": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map order": {
+      "main": [
+        [
+          {
+            "node": "Execute insert external order workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": 16
+}
