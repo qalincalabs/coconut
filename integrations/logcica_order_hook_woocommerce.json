@@ -40,7 +40,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const externalOrder = $node[\"Decorated order\"].json\nconst externalShop = $node[\"Map shop\"].json\nconst externalProducts = $items(\"Get product\").map(p => (p.json))\nconst externalVariants = $items(\"Get variant\").map(p => (p.json))\n\nconst shippingAddressName = [\n    externalOrder.shipping.first_name, \n    externalOrder.shipping.last_name, \n    externalOrder.shipping.company\n  ]\n  .filter(n => n).join(\" \")\n\nconst shippingAddressStreet = [\n    externalOrder.shipping.address_1, \n    externalOrder.shipping.address_2\n  ]\n  .filter(n => n).join(\" \")\n\nconst address = {\n  name: shippingAddressName,\n  street: shippingAddressStreet,\n  postalCode: externalOrder.shipping.postcode,\n  locality: externalOrder.shipping.city,\n  country: {\n    code: externalOrder.shipping.country\n  }\n}\n\nconst order = \n{\n  number: externalOrder.order_key,\n  date: externalOrder.date_created,\n  url: externalShop.url + \"/wp-admin/post.php?post=\"+ externalOrder.id +\"&action=edit\",\n  confirmed: true,\n  buyer: {\n    name: shippingAddressName, // TODO not totally correct\n  },\n  seller: {\n    name: externalShop.name,\n    workspace: {\n      ids: externalShop.ids\n    }\n  },\n  broker: {\n    name: \"WooCommerce\",\n    workspace: {\n      marketplace: {\n        key: \"woocommerce\"\n      }\n    }\n  },\n  shippingMethod: {\n    ids: [\"gid://woocommerce/ShippingMethod/none\"],\n    name: \"Pas de méthode de livraison\"\n  },\n  shippingAddress: {\n    name: address.name,\n    street: address.street,\n    postalCode: address.postalCode,\n    locality: address.locality,\n    country: address.country,\n    place: {\n      ids: [\"gid://woocommerce/place/none\"],\n      address: {\n        street: address.street,\n        postalCode: address.postalCode,\n        locality: address.locality,\n        country: address.country,\n      }\n    }\n  }\n}\n\norder.lines = externalOrder.line_items.map(i => {\n  const externalProduct = externalProducts.find(p => p.id == i.product_id)\n  const externalVariant = externalVariants.find(v => v.id == i.variation_id) ?? externalProduct\n  const line = {\n      name: i.name,\n      product: {\n        ids: [ externalShop.url + \"/products/\" +  externalVariant.id ], // TODO : better ids\n        name: externalVariant.name,\n        createdAt: externalVariant.date_created_gmt\n      },\n      item: {\n        ids: [ externalShop.url + \"/catalogitems/\" +  externalVariant.id ], // TODO : better ids\n        name: externalVariant.name,\n        createdAt: externalVariant.date_created_gmt,\n      },\n      quantity: {\n        value:  i.quantity\n      }\n    }\n\n    line.product.categories = externalProduct.categories.map(c => ({\n      ids:  [ externalShop.url + \"/productcategories/\"+ c.id],\n      name: c.name\n    }))\n\n\n    if(externalProduct.id != externalVariant.id)  \n      line.product.group = {\n        ids: [externalShop.url + \"/products/\" +  externalProduct.id],\n        name: externalProduct.name,\n        createdAt: externalProduct.date_created_gmt,\n      }\n\n  return line\n})\n\n/*\nshippingMethod: {\n  ids: [\"https://openfoodnetwork.be/shippingmethods/\"+externalOrder.shipping_method.id],\n  name: externalOrder.shipping_method.name,\n  description: externalOrder.shipping_method.description\n}\n*/\n\nreturn order;"
+        "functionCode": "const externalOrder = $node[\"Decorated order\"].json\nconst externalShop = $node[\"Map shop\"].json\nconst externalProducts = $items(\"Get product\").map(p => (p.json))\nconst externalVariants = $items(\"Get variant\").map(p => (p.json))\n\nconst shippingAddressName = [\n    externalOrder.shipping.first_name, \n    externalOrder.shipping.last_name, \n    externalOrder.shipping.company\n  ]\n  .filter(n => n).join(\" \")\n\nconst shippingAddressStreet = [\n    externalOrder.shipping.address_1, \n    externalOrder.shipping.address_2\n  ]\n  .filter(n => n).join(\" \")\n\nconst address = {\n  name: shippingAddressName,\n  street: shippingAddressStreet,\n  postalCode: externalOrder.shipping.postcode,\n  locality: externalOrder.shipping.city,\n  country: {\n    code: externalOrder.shipping.country\n  }\n}\n\nconst order = \n{\n  number: externalOrder.order_key,\n  date: externalOrder.date_created_gmt + \"Z\",\n  url: externalShop.url + \"/wp-admin/post.php?post=\"+ externalOrder.id +\"&action=edit\",\n  confirmed: true,\n  buyer: {\n    name: shippingAddressName, // TODO not totally correct\n  },\n  seller: {\n    name: externalShop.name,\n    workspace: {\n      ids: externalShop.ids\n    }\n  },\n  broker: {\n    name: \"WooCommerce\",\n    workspace: {\n      marketplace: {\n        key: \"woocommerce\"\n      }\n    }\n  },\n  shippingMethod: {\n    ids: [\"gid://woocommerce/ShippingMethod/none\"],\n    name: \"Pas de méthode de livraison\"\n  },\n  shippingAddress: {\n    name: address.name,\n    street: address.street,\n    postalCode: address.postalCode,\n    locality: address.locality,\n    country: address.country,\n    place: {\n      ids: [externalShop.key + \"/places/\" \n      + address.name + \"-\" + address.street + \"-\" + address.postalCode + \"-\" \n      + address.locality + \"-\" + address.country.code ],\n      address: {\n        street: address.street,\n        postalCode: address.postalCode,\n        locality: address.locality,\n        country: address.country,\n      }\n    }\n  }\n}\n\norder.lines = externalOrder.line_items.map(i => {\n  const externalProduct = externalProducts.find(p => p.id == i.product_id)\n  const externalVariant = externalVariants.find(v => v.id == i.variation_id) ?? externalProduct\n  const line = {\n      name: i.name,\n      product: {\n        ids: [ externalShop.key + \"/products/\" +  externalVariant.id ], // TODO : better ids\n        name: externalVariant.name,\n        createdAt: externalVariant.date_created_gmt + \"Z\"\n      },\n      item: {\n        ids: [ externalShop.key + \"/catalogitems/\" +  externalVariant.id ], // TODO : better ids\n        name: externalVariant.name,\n        createdAt: externalVariant.date_created_gmt + \"Z\",\n      },\n      quantity: {\n        value:  i.quantity\n      }\n    }\n\n    line.product.categories = externalProduct.categories.map(c => ({\n      ids:  [ externalShop.key + \"/productcategories/\"+ c.id],\n      name: c.name,\n      classification: {\n        key: \"woocommerce-\" + externalShop.key,\n        name: \"WooCommerce - \" + externalShop.key\n      }\n    }))\n\n\n    if(externalProduct.id != externalVariant.id)  \n      line.product.group = {\n        ids: [externalShop.url + \"/products/\" +  externalProduct.id],\n        name: externalProduct.name,\n        createdAt: externalProduct.date_created_gmt + \"Z\",\n      }\n\n  return line\n})\n\n/*\nshippingMethod: {\n  ids: [\"https://openfoodnetwork.be/shippingmethods/\"+externalOrder.shipping_method.id],\n  name: externalOrder.shipping_method.name,\n  description: externalOrder.shipping_method.description\n}\n*/\n\nreturn order;"
       },
       "name": "Map order",
       "type": "n8n-nodes-base.functionItem",
@@ -52,8 +52,7 @@
     },
     {
       "parameters": {
-        "mode": "passThrough",
-        "output": "input2"
+        "mode": "passThrough"
       },
       "name": "Merge",
       "type": "n8n-nodes-base.merge",
@@ -90,14 +89,14 @@
     },
     {
       "parameters": {
-        "functionCode": "const order = $node[\"Decorated order\"].json\n\nfunction getDomain(url, subdomain) {\n    subdomain = subdomain || false;\n\n    url = url.replace(/(https?:\\/\\/)?(www.)?/i, '');\n\n    if (!subdomain) {\n        url = url.split('.');\n        url = url.slice(url.length - 2).join('.');\n    }\n\n    if (url.indexOf('/') !== -1) {\n        return url.split('/')[0];\n    }\n\n    return url;\n}\n\nconst workspace = {\n  ids: [order.shop.url],\n  url: order.shop.url,\n  name: getDomain(order.shop.url),\n  address: {\n    street: [\n      item.find(i => i.id == \"woocommerce_store_address\").value,\n      item.find(i => i.id == \"woocommerce_store_address_2\").value]\n      .filter(i => i).join(\", \") ,\n    postalCode: item.find(i => i.id == \"woocommerce_store_postcode\").value,\n    locality: item.find(i => i.id == \"woocommerce_store_city\").value,\n    country: {\n      code: item.find(i => i.id == \"woocommerce_default_country\").value,\n    }\n  }\n}\n\nreturn workspace;"
+        "functionCode": "const order = $node[\"Decorated order\"].json\n\nfunction getDomain(url, subdomain) {\n    subdomain = subdomain || false;\n\n    url = url.replace(/(https?:\\/\\/)?(www.)?/i, '');\n\n    if (!subdomain) {\n        url = url.split('.');\n        url = url.slice(url.length - 2).join('.');\n    }\n\n    if (url.indexOf('/') !== -1) {\n        return url.split('/')[0];\n    }\n\n    return url;\n}\n\nconst shopKey = getDomain(order.shop.url)\n\nconst workspace = {\n  ids: [shopKey],\n  key: shopKey,\n  url: order.shop.url,\n  name: shopKey, // TODO can't get the name ...\n  address: {\n    street: [\n      item.find(i => i.id == \"woocommerce_store_address\").value,\n      item.find(i => i.id == \"woocommerce_store_address_2\").value]\n      .filter(i => i).join(\", \") ,\n    postalCode: item.find(i => i.id == \"woocommerce_store_postcode\").value,\n    locality: item.find(i => i.id == \"woocommerce_store_city\").value,\n    country: {\n      code: item.find(i => i.id == \"woocommerce_default_country\").value,\n    }\n  }\n}\n\nreturn workspace;"
       },
       "name": "Map shop",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
         820,
-        400
+        480
       ]
     },
     {
@@ -135,7 +134,7 @@
       "typeVersion": 1,
       "position": [
         500,
-        60
+        20
       ]
     },
     {
@@ -149,7 +148,7 @@
       "typeVersion": 1,
       "position": [
         560,
-        400
+        480
       ],
       "credentials": {
         "httpBasicAuth": {
@@ -173,7 +172,7 @@
       "typeVersion": 1,
       "position": [
         640,
-        240
+        200
       ]
     },
     {
@@ -187,7 +186,7 @@
       "typeVersion": 1,
       "position": [
         820,
-        60
+        20
       ],
       "credentials": {
         "httpBasicAuth": {
@@ -207,7 +206,7 @@
       "typeVersion": 1,
       "position": [
         820,
-        220
+        180
       ],
       "credentials": {
         "httpBasicAuth": {
@@ -234,17 +233,6 @@
         [
           {
             "node": "Order stub",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Order event": {
-      "main": [
-        [
-          {
-            "node": "Merge",
             "type": "main",
             "index": 0
           }
@@ -285,6 +273,11 @@
             "node": "Get general settings",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -376,6 +369,17 @@
         [
           {
             "node": "Execute insert external order workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order event": {
+      "main": [
+        [
+          {
+            "node": "Merge",
             "type": "main",
             "index": 0
           }

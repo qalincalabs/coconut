@@ -39,7 +39,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const a = item.shippingAddress\nitem.shippingAddress.mapsSearchQuery = `${a.street}, ${a.postalCode} ${a.locality}, ${a.country.name}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.lines.reduce((acc, cur) => acc + cur.quantity.value,0);\nitem.url = item.url\nreturn item;"
+        "functionCode": "const a = item.shippingAddress\nitem.shippingAddress.mapsSearchQuery = `${a.street}, ${a.postalCode} ${a.locality}, ${a.country.name ?? a.country.code}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.lines.reduce((acc, cur) => acc + cur.quantity.value,0);\nitem.url = item.url\nreturn item;"
       },
       "name": "Enrich",
       "type": "n8n-nodes-base.functionItem",
@@ -71,8 +71,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        1560,
-        -40
+        1400,
+        -60
       ]
     },
     {
@@ -198,7 +198,7 @@
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        1740,
+        1780,
         160
       ]
     },
@@ -245,8 +245,8 @@
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        2400,
-        -400
+        1900,
+        -600
       ]
     },
     {
@@ -268,14 +268,13 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        3000,
-        -400
+        3340,
+        -580
       ]
     },
     {
       "parameters": {
-        "mode": "passThrough",
-        "output": "input2"
+        "mode": "wait"
       },
       "name": "Merge",
       "type": "n8n-nodes-base.merge",
@@ -299,42 +298,19 @@
     },
     {
       "parameters": {
-        "functionCode": "const productCategory = $node[\"Get product category\"].json.data.category\nconst product = $node[\"Products\"].json\n\nif(productCategory != null)\n  product.categories = {\n    link: [productCategory._id]\n  }\n\n\ndelete product.group\n\nreturn product;"
+        "functionCode": "const productCategories = $items(\"Upsert product category\")\nconst product = $node[\"Products\"].json\n\nfunction findCommonElements(arr1, arr2) {\n    return arr1.some(item => arr2.includes(item))\n}\n\n// TODO refactor this\nproduct.categories = {\n  link: product.categories.map(c => \n   productCategories.find(pc => \n    findCommonElements(pc.json.data.upsertOneProductCategory.ids,c.ids))\n     .json.data.upsertOneProductCategory._id\n  )\n}\n\ndelete product.group\n\nreturn product;"
       },
       "name": "Enrich product",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        2800,
-        -400
+        3100,
+        -580
       ]
     },
     {
       "parameters": {
-        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
-        "requestFormat": "json",
-        "query": "query getProductCategory($id: String!) {\n  category: productCategory(query: {id: $id}) {\n    _id\n    id\n    name\n  }\n}",
-        "variables": "={\n \"id\":  \"{{$json[\"categories\"][0][\"ids\"][0]}}\"\n}",
-        "headerParametersUi": {
-          "parameter": [
-            {
-              "name": "apiKey",
-              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
-            }
-          ]
-        }
-      },
-      "name": "Get product category",
-      "type": "n8n-nodes-base.graphql",
-      "typeVersion": 1,
-      "position": [
-        2580,
-        -400
-      ]
-    },
-    {
-      "parameters": {
-        "functionCode": "const json = {\n  \"number\": \"#1009\",\n  \"date\": \"2022-05-09T10:06:04Z\",\n  \"confirmed\": true,\n  \"url\": \"https://testlogcica.myshopify.com/admin/orders/4751133999355\",\n  \"buyer\": {\n    \"name\": \"Olivier Wouters\"\n  },\n  \"seller\": {\n    \"name\": \"testlogcica\",\n    \"workspace\": {\n      \"ids\": [\"gid://shopify/Shop/63777276155\"]\n    }\n  },\n  \"broker\": {\n    \"name\": \"Shopify\",\n    \"workspace\": {\n      \"marketplace\": {\n        \"key\": \"shopify\"\n      }\n    }\n  },\n  \"lines\": [\n    {\n      \"name\": \"Sac de salade - Orange\",\n      \"product\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183147259\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Orange\",\n        \"group\": {\n          \"ids\": [\"gid://shopify/ProductVariant/42999183147259\"],\n          \"createdAt\": \"2022-05-09T10:03:52Z\",\n          \"name\": \"Sac de salade\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183147259\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Orange\"\n      },\n      \"quantity\": {\n        \"value\": 1\n      }\n    },\n    {\n      \"name\": \"Sac de salade - Purple\",\n      \"product\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183180027\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Purple\",\n        \"group\": {\n          \"ids\": [\"gid://shopify/ProductVariant/42999183180027\"],\n          \"createdAt\": \"2022-05-09T10:03:52Z\",\n          \"name\": \"Sac de salade\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"gid://shopify/ProductVariant/42999183180027\"],\n        \"createdAt\": \"2022-05-09T10:03:52Z\",\n        \"name\": \"Sac de salade - Purple\"\n      },\n      \"quantity\": {\n        \"value\": 1\n      }\n    }\n  ],\n  \"shippingMethod\": {\n    \"ids\": [\"gid://shopify/ShippingMethod/none\"],\n    \"name\": \"Pas de méthode de livraison\"\n  },\n  \"shippingAddress\": {\n    \"name\": \"Olivier Wouters\",\n    \"street\": \"Rue d'Anloy, 25\",\n    \"postalCode\": \"6853\",\n    \"locality\": \"Paliseul\",\n    \"country\": {\n      \"name\": \"Belgium\"\n    },\n    \"place\": {\n      \"ids\": [\"gid://shopify/MailingAddress/16163439018235?model_name=Address\"],\n      \"address\": {\n        \"street\": \"Rue d'Anloy, 25\",\n        \"postalCode\": \"6853\",\n        \"locality\": \"Paliseul\",\n        \"country\": {\n          \"name\": \"Belgium\"\n        }\n      },\n      \"geo\": {\n        \"type\": \"Point\",\n        \"coordinates\": [5.1725239, 49.9291176]\n      }\n    }\n  }\n}\n\nreturn json;"
+        "functionCode": "const json = {\n  \"number\": \"wc_order_ludMH9rT5yQFU\",\n  \"date\": \"2022-05-17T10:37:23Z\",\n  \"url\": \"https://www.digicirco.org/wp-admin/post.php?post=139&action=edit\",\n  \"confirmed\": true,\n  \"buyer\": {\n    \"name\": \"Olivier Wouters\"\n  },\n  \"seller\": {\n    \"name\": \"digicirco.org\",\n    \"workspace\": {\n      \"ids\": [\"digicirco.org\"]\n    }\n  },\n  \"broker\": {\n    \"name\": \"WooCommerce\",\n    \"workspace\": {\n      \"marketplace\": {\n        \"key\": \"woocommerce\"\n      }\n    }\n  },\n  \"shippingMethod\": {\n    \"ids\": [\"gid://woocommerce/ShippingMethod/none\"],\n    \"name\": \"Pas de méthode de livraison\"\n  },\n  \"shippingAddress\": {\n    \"name\": \"Olivier Wouters\",\n    \"street\": \"Grand rue, 40\",\n    \"postalCode\": \"6850\",\n    \"locality\": \"Carlsbourg\",\n    \"country\": {\n      \"code\": \"BE\"\n    },\n    \"place\": {\n      \"ids\": [\n        \"digicirco.org/places/Olivier Wouters-Grand rue, 40-6850-Carlsbourg-BE\"\n      ],\n      \"address\": {\n        \"street\": \"Grand rue, 40\",\n        \"postalCode\": \"6850\",\n        \"locality\": \"Carlsbourg\",\n        \"country\": {\n          \"code\": \"BE\"\n        }\n      }\n    }\n  },\n  \"lines\": [\n    {\n      \"name\": \"Carotte - Mauve\",\n      \"product\": {\n        \"ids\": [\"digicirco.org/products/137\"],\n        \"name\": \"Carotte - Mauve\",\n        \"createdAt\": \"2022-05-17T08:33:57Z\",\n        \"categories\": [\n          {\n            \"ids\": [\"digicirco.org/productcategories/19\"],\n            \"name\": \"Légumes\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          },\n          {\n            \"ids\": [\"digicirco.org/productcategories/20\"],\n            \"name\": \"Légumes frais\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          }\n        ],\n        \"group\": {\n          \"ids\": [\"https://www.digicirco.org/products/135\"],\n          \"name\": \"Carotte\",\n          \"createdAt\": \"2022-05-17T08:30:35Z\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"digicirco.org/catalogitems/137\"],\n        \"name\": \"Carotte - Mauve\",\n        \"createdAt\": \"2022-05-17T08:33:57Z\"\n      },\n      \"quantity\": {\n        \"value\": 2\n      }\n    },\n    {\n      \"name\": \"Gobelets Beeyo 330 Ml\",\n      \"product\": {\n        \"ids\": [\"digicirco.org/products/117\"],\n        \"name\": \"Gobelets Beeyo 330 Ml\",\n        \"createdAt\": \"2022-05-13T09:46:53Z\",\n        \"categories\": [\n          {\n            \"ids\": [\"digicirco.org/productcategories/17\"],\n            \"name\": \"Verres réutilisables\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          }\n        ]\n      },\n      \"item\": {\n        \"ids\": [\"digicirco.org/catalogitems/117\"],\n        \"name\": \"Gobelets Beeyo 330 Ml\",\n        \"createdAt\": \"2022-05-13T09:46:53Z\"\n      },\n      \"quantity\": {\n        \"value\": 3\n      }\n    }\n  ]\n}\n\nreturn json;"
       },
       "name": "Test order init data",
       "type": "n8n-nodes-base.functionItem",
@@ -360,8 +336,116 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        1280,
-        -20
+        1180,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "categories",
+        "options": {}
+      },
+      "name": "Product categories",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        -460
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const productCategory = $node[\"Product categories\"].json\nconst productClassification = $node[\"Upsert product classification\"].json.data.upsertOneProductClassification\n\nproductCategory.classification = {\n  link: {\n    _id: productClassification._id\n  }\n}\n\nreturn productCategory;"
+      },
+      "name": "Enrich product category",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2600,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertProductClassification($query: ProductClassificationQueryInput!, $data: ProductClassificationInsertInput!) {\n  upsertOneProductClassification(query: $query, data: $data) {\n    _id\n    name\n    key\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"key_in\": [\"{{$node[\"Product categories\"].json[\"classification\"][\"key\"]}}\"]\n  },\n  \"data\": {{JSON.stringify($node[\"Product categories\"].json[\"classification\"])}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert product classification",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertProductCategory($query: ProductCategoryQueryInput!, $data: ProductCategoryInsertInput!) {\n  upsertOneProductCategory(query: $query, data: $data) {\n    _id\n    ids\n    name\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Enrich product category\"].json[\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Enrich product category\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert product category",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2760,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        2940,
+        -580
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        160
       ]
     }
   ],
@@ -424,9 +508,9 @@
       "main": [
         [
           {
-            "node": "Decorated order",
+            "node": "Merge3",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -472,7 +556,12 @@
       "main": [
         [
           {
-            "node": "Get product category",
+            "node": "Product categories",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
             "type": "main",
             "index": 0
           }
@@ -534,17 +623,6 @@
         ]
       ]
     },
-    "Get product category": {
-      "main": [
-        [
-          {
-            "node": "Enrich product",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Start": {
       "main": [
         [
@@ -572,6 +650,99 @@
         [
           {
             "node": "Geocode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product categories": {
+      "main": [
+        [
+          {
+            "node": "Upsert product classification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Enrich product category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert product classification": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Enrich product category": {
+      "main": [
+        [
+          {
+            "node": "Upsert product category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert product category": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Enrich product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Decorated order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Geocode": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
             "type": "main",
             "index": 0
           }
