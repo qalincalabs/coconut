@@ -367,7 +367,7 @@
     },
     {
       "parameters": {
-        "functionCode": "const productCategory = $node[\"Product categories\"].json\nconst productClassification = $node[\"Upsert product classification\"].json.data.upsertOneProductClassification\n\nproductCategory.classification = {\n  link: {\n    _id: productClassification._id\n  }\n}\n\nreturn productCategory;"
+        "functionCode": "const productCategory = $node[\"Product categories\"].json\nconst productClassification = $node[\"Upsert product classification\"].json.data.upsertOneProductClassification\n\nproductCategory.classification = {\n  link: productClassification._id\n}\n\nreturn productCategory;"
       },
       "name": "Enrich product category",
       "type": "n8n-nodes-base.functionItem",
