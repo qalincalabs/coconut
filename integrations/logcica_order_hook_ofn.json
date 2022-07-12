@@ -168,7 +168,7 @@
       "typeVersion": 1,
       "position": [
         1100,
-        270
+        260
       ],
       "alwaysOutputData": false,
       "credentials": {
@@ -180,7 +180,7 @@
     },
     {
       "parameters": {
-        "functionCode": "\nconst ofnOrder = $node[\"Get order\"].json\nconst ofnProducts = $items(\"Get product\").map(p => (p.json))\n\nconst order = \n{\n    number: ofnOrder.number,\n    url: \"https://openfoodnetwork.be/admin/orders/\" + ofnOrder.number + \"/edit\",\n    date: new Date(ofnOrder.created_at).toISOString(),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name,\n      workspace: {\n        ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/main\"]\n      }\n    },\n    broker: {\n      name: \"OFN\",\n      workspace: {\n        marketplace: {\n          key: \"ofn-be\"\n        }\n      }\n    },\n    lines: ofnOrder.line_items.map(i => ({\n        name: i.variant.name_to_display,\n        item: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/catalogs/main/items/\" + i.variant.id],\n          name: i.variant.name_to_display,\n        },\n        product: {\n          name: i.variant.name_to_display,\n          ids: [\"https://openfoodnetwork.be/variants/\" + i.variant.id],\n          group: {\n            ids: [\"https://openfoodnetwork.be/products/\" + ofnProducts.find(p => p.name == i.variant.product_name).id],\n            name: i.variant.product_name\n          },\n          categories: [{\n            ids: [\"https://openfoodnetwork.be/categories/\" + ofnProducts.find(p => p.name == i.variant.product_name).category_id],\n          }]\n        },\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      },\n      place: {\n        ids: [\"https://openfoodnetwork.be/addresses/\"+ ofnOrder.ship_address.id],\n        address: {\n          street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n          postalCode: ofnOrder.ship_address.zipcode,\n          locality: ofnOrder.ship_address.city,\n          country: {\n            name: ofnOrder.ship_address.country_name\n          }\n        }\n      }\n    },\n    shippingMethod: {\n      ids: [\"https://openfoodnetwork.be/shippingmethods/\" + ofnOrder.shipping_method.id],\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
+        "functionCode": "\nconst ofnOrder = $node[\"Get order\"].json\nconst ofnProducts = $items(\"Find OFN product\").map(p => (p.json))\n\nconst order = \n{\n    number: ofnOrder.number,\n    url: \"https://openfoodnetwork.be/admin/orders/\" + ofnOrder.number + \"/edit\",\n    date: new Date(ofnOrder.created_at).toISOString(),\n    confirmed: true,\n    buyer: {\n      name: ofnOrder.full_name,\n    },\n    seller: {\n      name: ofnOrder.distributor_name,\n      workspace: {\n        ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/main\"]\n      }\n    },\n    broker: {\n      name: \"OFN\",\n      workspace: {\n        marketplace: {\n          key: \"ofn-be\"\n        }\n      }\n    },\n    lines: ofnOrder.line_items.map(i => ({\n        name: i.variant.name_to_display,\n        item: {\n          ids: [\"https://openfoodnetwork.be/enterprises/\" + ofnOrder.distributor.id + \"/catalogs/main/items/\" + i.variant.id],\n          name: i.variant.name_to_display,\n        },\n        product: {\n          name: i.variant.name_to_display,\n          ids: [\"ofn_be/variant/id/\" + i.variant.id],\n          group: {\n            ids: [\"ofn_be/product/id/\" + ofnProducts.find(p => p.name == i.variant.product_name).id],\n            name: i.variant.product_name\n          },\n          categories: [{\n            ids: [\"https://openfoodnetwork.be/categories/\" + ofnProducts.find(p => p.name == i.variant.product_name).category_id],\n            classification: {\n              key: \"ofn-be\",\n              name: \"OFN BE\"\n            }\n          }]\n        },\n        quantity: {\n          value:  i.quantity\n        }\n      })),\n    shippingAddress: {\n      name: ofnOrder.ship_address.firstname + \" \" + ofnOrder.ship_address.lastname,\n      phone: ofnOrder.ship_address.phone,\n      street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n      postalCode: ofnOrder.ship_address.zipcode,\n      locality: ofnOrder.ship_address.city,\n      country: {\n        name: ofnOrder.ship_address.country_name\n      },\n      place: {\n        ids: [\"https://openfoodnetwork.be/addresses/\"+ ofnOrder.ship_address.id],\n        address: {\n          street: ofnOrder.ship_address.address1 + \", \" + ofnOrder.ship_address.address2,\n          postalCode: ofnOrder.ship_address.zipcode,\n          locality: ofnOrder.ship_address.city,\n          country: {\n            name: ofnOrder.ship_address.country_name\n          }\n        }\n      }\n    },\n    shippingMethod: {\n      ids: [\"https://openfoodnetwork.be/shippingmethods/\" + ofnOrder.shipping_method.id],\n      name: ofnOrder.shipping_method.name,\n      description: ofnOrder.shipping_method.description\n    }\n  }\n\nreturn order;\n"
       },
       "name": "Map order",
       "type": "n8n-nodes-base.functionItem",
@@ -192,7 +192,7 @@
     },
     {
       "parameters": {
-        "functionCode": "return items.reduce((acc,val) => acc = acc.concat(val.json.orders),[]) .map(item => {\n  return {\n    json: item\n  }\n})\n"
+        "functionCode": "return items.reduce((acc,val) => acc = acc.concat(val.json.orders),[]).filter(i => i.shipment_state == \"shipped\").map(item => {\n  return {\n    json: item\n  }\n})\n"
       },
       "name": "Order list",
       "type": "n8n-nodes-base.function",
@@ -217,15 +217,15 @@
     {
       "parameters": {
         "authentication": "headerAuth",
-        "url": "={{$json[\"variant\"][\"product\"][\"getUrl\"]}}",
+        "url": "={{$json.variant.product.getUrl}}",
         "options": {}
       },
       "name": "Get product",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        1780,
-        460
+        1760,
+        560
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -236,14 +236,14 @@
     },
     {
       "parameters": {
-        "functionCode": "function slugify(string) {\n  const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìıİłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'\n  const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'\n  const p = new RegExp(a.split('').join('|'), 'g')\n\n  return string.toString().toLowerCase()\n    .replace(/\\s+/g, '-') // Replace spaces with -\n    .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters\n    .replace(/&/g, '-and-') // Replace & with 'and'\n    .replace(/[^\\w\\-]+/g, '') // Remove all non-word characters\n    .replace(/\\-\\-+/g, '-') // Replace multiple - with single -\n    .replace(/^-+/, '') // Trim - from start of text\n    .replace(/-+$/, '') // Trim - from end of text\n}\n\nitem.variant.product = {\n  getUrl: \"https://openfoodnetwork.be/api/v0/products/\" + slugify(item.variant.product_name)\n}\n\nreturn item;"
+        "functionCode": "function slugify(string) {\n  const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìıİłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'\n  const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'\n  const p = new RegExp(a.split('').join('|'), 'g')\n\n  return string.toString().toLowerCase()\n    .replace(/\\s+/g, '-') // Replace spaces with -\n    .replace(/\\.+/g, '-') // Replace . with -\n    .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters\n    .replace(/&/g, '-and-') // Replace & with 'and'\n    .replace(/[^\\w\\-]+/g, '') // Remove all non-word characters\n    .replace(/\\-\\-+/g, '-') // Replace multiple - with single -\n    .replace(/^-+/, '') // Trim - from start of text\n    .replace(/-+$/, '') // Trim - from end of text\n}\n\nitem.variant.product = {\n  getUrl: \"https://openfoodnetwork.be/api/v0/products/bulk_products?q[name_eq]=\" + encodeURIComponent(item.variant.product_name)  // + slugify(item.variant.product_name)\n}\n\nreturn item;"
       },
       "name": "Enrich line item",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        1600,
-        460
+        1580,
+        560
       ]
     },
     {
@@ -255,8 +255,8 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 1,
       "position": [
-        1420,
-        460
+        1400,
+        560
       ]
     },
     {
@@ -270,6 +270,18 @@
       "position": [
         2380,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const variantId = $node[\"Enrich line item\"].json.variant.id\n\nfor(p of item.products){\n  for(v of p.variants){\n    if(v.id == variantId)\n    return p\n  }\n}"
+      },
+      "name": "Find OFN product",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        560
       ]
     }
   ],
@@ -393,9 +405,9 @@
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Find OFN product",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -432,9 +444,21 @@
           }
         ]
       ]
+    },
+    "Find OFN product": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {},
-  "id": 12
+  "id": 12,
+  "tags": []
 }

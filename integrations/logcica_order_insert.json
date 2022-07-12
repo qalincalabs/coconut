@@ -13,32 +13,6 @@
     },
     {
       "parameters": {
-        "channel": "acteur-comptoir-demo-ofn",
-        "text": "=",
-        "jsonParameters": true,
-        "attachments": [],
-        "otherOptions": {
-          "unfurl_links": false,
-          "unfurl_media": false
-        },
-        "blocksJson": "= [\n {\n \"type\": \"section\",\n \"text\": {\n \"type\": \"mrkdwn\",\n \"text\": \":postbox: *Nouvel envoi :* Commande <{{$json[\"url\"]}}|{{$json[\"number\"]}}> pour {{$json[\"seller\"][\"name\"]}} via *{{$json[\"broker\"][\"workspace\"][\"marketplace\"][\"key\"]}}*\"\n },\n \"accessory\": {\n \"type\": \"overflow\",\n \"options\": [\n {\n \"text\": {\n \"type\": \"plain_text\",\n \"text\": \":truck: Planifier\",\n \"emoji\": true\n },\n \"value\": \"shipment_schedule\"\n },\n {\n \"text\": {\n \"type\": \"plain_text\",\n \"text\": \":house: Livré\",\n \"emoji\": true\n },\n \"value\": \"shipment_delivered\"\n },\n {\n \"text\": {\n \"type\": \"plain_text\",\n \"text\": \":octagonal_sign: Annuler\",\n \"emoji\": true\n },\n \"value\": \"shipment_cancel\"\n }\n ]\n }\n },\n {\n \"type\": \"context\",\n \"elements\": [\n {\n \"type\": \"mrkdwn\",\n \"text\": \":aerial_tramway: {{$json[\"shippingMethod\"][\"name\"]}}\"\n },\n {\n \"type\": \"mrkdwn\",\n \"text\": \":round_pushpin: {{$json[\"buyer\"][\"name\"]}}, <https://maps.google.com/?q={{$json[\"shippingAddress\"][\"mapsSearchQuery\"]}}|{{$json[\"shippingAddress\"][\"street\"]}}, {{$json[\"shippingAddress\"][\"postalCode\"]}} {{$json[\"shippingAddress\"][\"locality\"]}}>\"\n },\n {\n \"type\": \"mrkdwn\",\n \"text\": \":label: {{$json[\"itemsQuantitySum\"]}} produit(s)\"\n }\n ]\n }\n ]"
-      },
-      "name": "Slack",
-      "type": "n8n-nodes-base.slack",
-      "typeVersion": 1,
-      "position": [
-        1480,
-        420
-      ],
-      "credentials": {
-        "slackApi": {
-          "id": "11",
-          "name": "coconut bot"
-        }
-      }
-    },
-    {
-      "parameters": {
         "functionCode": "const a = item.shippingAddress\nitem.shippingAddress.mapsSearchQuery = `${a.street}, ${a.postalCode} ${a.locality}, ${a.country.name ?? a.country.code}`.replace(/\\s/g, '+');\nitem.itemsQuantitySum = item.lines.reduce((acc, cur) => acc + cur.quantity.value,0);\nitem.url = item.url\nreturn item;"
       },
       "name": "Enrich",
@@ -94,8 +68,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        3900,
-        -200
+        5140,
+        -300
       ]
     },
     {
@@ -117,8 +91,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2440,
-        -20
+        2320,
+        200
       ]
     },
     {
@@ -140,8 +114,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2440,
-        180
+        2560,
+        200
       ]
     },
     {
@@ -163,8 +137,8 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        3500,
-        -200
+        4740,
+        -300
       ]
     },
     {
@@ -221,32 +195,32 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2600,
-        -200
+        2360,
+        400
       ]
     },
     {
       "parameters": {
-        "functionCode": "return items.reduce((acc, val) => acc = acc.concat(val.json.catalogItems),[]).map(i => ({json: i}))"
+        "functionCode": "return $items(\"Decorated order\").reduce((acc, val) => acc = acc.concat(val.json.catalogItems),[]).map(i => ({json: i}))"
       },
       "name": "Catalog items",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        2400,
-        -200
+        2160,
+        400
       ]
     },
     {
       "parameters": {
-        "functionCode": "return items.reduce((acc, val) => acc = acc.concat(val.json.products),[]).map(i => ({json: i}))"
+        "functionCode": "return $items(\"Decorated order\").reduce((acc, val) => acc = acc.concat(val.json.products),[]).map(i => ({json: i}))"
       },
       "name": "Products",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        1900,
-        -600
+        2060,
+        600
       ]
     },
     {
@@ -269,48 +243,38 @@
       "typeVersion": 1,
       "position": [
         3340,
-        -580
-      ]
+        1120
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "mode": "wait"
-      },
-      "name": "Merge",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 1,
-      "position": [
-        3260,
-        -200
-      ]
-    },
-    {
-      "parameters": {
-        "functionCode": "const order = $node[\"Decorated order\"].json\nconst orderRelationships = $node[\"Get order relationships\"].json.data\n\norder.shippingAddress.place = {\n  link: orderRelationships.shippingAddressPlace._id\n}\n\norder.shippingMethod = {\n  link: orderRelationships.shippingMethod._id\n}\n\norder.lines.forEach(l => {\n  l.product = {\n    _id: orderRelationships.lineProducts.find(p => p.ids.includes(l.product.ids[0]))._id\n  }\n  l.item = {\n    _id: orderRelationships.lineItems.find(p => p.ids.includes(l.item.ids[0]))._id\n  }\n})\n\ndelete order.products \ndelete order.productsIds\ndelete order.catalogItems\ndelete order.catalogItemsIds\ndelete order.shippingAddress.mapsSearchQuery\ndelete order.itemsQuantitySum\n\nreturn order"
+        "functionCode": "const order = $node[\"Decorated order\"].json\nconst orderRelationships = $node[\"Get order relationships\"].json.data\n\norder.shippingAddress.place = {\n  link: orderRelationships.shippingAddressPlace._id\n}\n\norder.shippingMethod = {\n  link: orderRelationships.shippingMethod._id\n}\n\norder.lines.forEach(l => {\n  l.product = {\n    _id: orderRelationships.lineProducts.find(p => p.ids.includes(l.product.ids[0]))._id\n  }\n  //l.product1 = orderRelationships.lineProducts.find(p => p.ids.includes(l.product.ids[0]))._id\n  l.item = {\n    _id: orderRelationships.lineItems.find(p => p.ids.includes(l.item.ids[0]))._id\n  }\n})\n\ndelete order.products \ndelete order.productsIds\ndelete order.catalogItems\ndelete order.catalogItemsIds\ndelete order.shippingAddress.mapsSearchQuery\ndelete order.itemsQuantitySum\n\nreturn order"
       },
       "name": "Order",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        3720,
-        -200
+        4960,
+        -300
       ]
     },
     {
       "parameters": {
-        "functionCode": "const productCategories = $items(\"Upsert product category\")\nconst product = $node[\"Products\"].json\n\nfunction findCommonElements(arr1, arr2) {\n    return arr1.some(item => arr2.includes(item))\n}\n\n// TODO refactor this\nproduct.categories = {\n  link: product.categories.map(c => \n   productCategories.find(pc => \n    findCommonElements(pc.json.data.upsertOneProductCategory.ids,c.ids))\n     .json.data.upsertOneProductCategory._id\n  )\n}\n\ndelete product.group\n\nreturn product;"
+        "functionCode": "const productCategories = $items(\"Upsert product category\")\nconst product = item.newProduct\n\nif(product == null)\n  return null\n\nfunction findCommonElements(arr1, arr2) {\n    return arr1.some(item => arr2.includes(item))\n}\n\n// TODO refactor this\nproduct.categories = {\n  link: product.categories.map(c => \n   productCategories.find(pc => \n    findCommonElements(pc.json.data.upsertOneProductCategory.ids,c.ids))\n     .json.data.upsertOneProductCategory._id\n  )\n}\n\ndelete product.group\n\nreturn product;"
       },
       "name": "Enrich product",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        3100,
-        -580
-      ]
+        3160,
+        1120
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "functionCode": "const json = {\n  \"number\": \"wc_order_ludMH9rT5yQFU\",\n  \"date\": \"2022-05-17T10:37:23Z\",\n  \"url\": \"https://www.digicirco.org/wp-admin/post.php?post=139&action=edit\",\n  \"confirmed\": true,\n  \"buyer\": {\n    \"name\": \"Olivier Wouters\"\n  },\n  \"seller\": {\n    \"name\": \"digicirco.org\",\n    \"workspace\": {\n      \"ids\": [\"digicirco.org\"]\n    }\n  },\n  \"broker\": {\n    \"name\": \"WooCommerce\",\n    \"workspace\": {\n      \"marketplace\": {\n        \"key\": \"woocommerce\"\n      }\n    }\n  },\n  \"shippingMethod\": {\n    \"ids\": [\"gid://woocommerce/ShippingMethod/none\"],\n    \"name\": \"Pas de méthode de livraison\"\n  },\n  \"shippingAddress\": {\n    \"name\": \"Olivier Wouters\",\n    \"street\": \"Grand rue, 40\",\n    \"postalCode\": \"6850\",\n    \"locality\": \"Carlsbourg\",\n    \"country\": {\n      \"code\": \"BE\"\n    },\n    \"place\": {\n      \"ids\": [\n        \"digicirco.org/places/Olivier Wouters-Grand rue, 40-6850-Carlsbourg-BE\"\n      ],\n      \"address\": {\n        \"street\": \"Grand rue, 40\",\n        \"postalCode\": \"6850\",\n        \"locality\": \"Carlsbourg\",\n        \"country\": {\n          \"code\": \"BE\"\n        }\n      }\n    }\n  },\n  \"lines\": [\n    {\n      \"name\": \"Carotte - Mauve\",\n      \"product\": {\n        \"ids\": [\"digicirco.org/products/137\"],\n        \"name\": \"Carotte - Mauve\",\n        \"createdAt\": \"2022-05-17T08:33:57Z\",\n        \"categories\": [\n          {\n            \"ids\": [\"digicirco.org/productcategories/19\"],\n            \"name\": \"Légumes\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          },\n          {\n            \"ids\": [\"digicirco.org/productcategories/20\"],\n            \"name\": \"Légumes frais\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          }\n        ],\n        \"group\": {\n          \"ids\": [\"https://www.digicirco.org/products/135\"],\n          \"name\": \"Carotte\",\n          \"createdAt\": \"2022-05-17T08:30:35Z\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"digicirco.org/catalogitems/137\"],\n        \"name\": \"Carotte - Mauve\",\n        \"createdAt\": \"2022-05-17T08:33:57Z\"\n      },\n      \"quantity\": {\n        \"value\": 2\n      }\n    },\n    {\n      \"name\": \"Gobelets Beeyo 330 Ml\",\n      \"product\": {\n        \"ids\": [\"digicirco.org/products/117\"],\n        \"name\": \"Gobelets Beeyo 330 Ml\",\n        \"createdAt\": \"2022-05-13T09:46:53Z\",\n        \"categories\": [\n          {\n            \"ids\": [\"digicirco.org/productcategories/17\"],\n            \"name\": \"Verres réutilisables\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          }\n        ]\n      },\n      \"item\": {\n        \"ids\": [\"digicirco.org/catalogitems/117\"],\n        \"name\": \"Gobelets Beeyo 330 Ml\",\n        \"createdAt\": \"2022-05-13T09:46:53Z\"\n      },\n      \"quantity\": {\n        \"value\": 3\n      }\n    }\n  ]\n}\n\nreturn json;"
+        "functionCode": "/*\nconst json = {\n  \"number\": \"wc_order_ludMH9rT5yQFU\",\n  \"date\": \"2022-05-17T10:37:23Z\",\n  \"url\": \"https://www.digicirco.org/wp-admin/post.php?post=139&action=edit\",\n  \"confirmed\": true,\n  \"buyer\": {\n    \"name\": \"Olivier Wouters\"\n  },\n  \"seller\": {\n    \"name\": \"digicirco.org\",\n    \"workspace\": {\n      \"ids\": [\"digicirco.org\"]\n    }\n  },\n  \"broker\": {\n    \"name\": \"WooCommerce\",\n    \"workspace\": {\n      \"marketplace\": {\n        \"key\": \"woocommerce\"\n      }\n    }\n  },\n  \"shippingMethod\": {\n    \"ids\": [\"gid://woocommerce/ShippingMethod/none\"],\n    \"name\": \"Pas de méthode de livraison\"\n  },\n  \"shippingAddress\": {\n    \"name\": \"Olivier Wouters\",\n    \"street\": \"Grand rue, 40\",\n    \"postalCode\": \"6850\",\n    \"locality\": \"Carlsbourg\",\n    \"country\": {\n      \"code\": \"BE\"\n    },\n    \"place\": {\n      \"ids\": [\n        \"digicirco.org/places/Olivier Wouters-Grand rue, 40-6850-Carlsbourg-BE\"\n      ],\n      \"address\": {\n        \"street\": \"Grand rue, 40\",\n        \"postalCode\": \"6850\",\n        \"locality\": \"Carlsbourg\",\n        \"country\": {\n          \"code\": \"BE\"\n        }\n      }\n    }\n  },\n  \"lines\": [\n    {\n      \"name\": \"Carotte - Mauve\",\n      \"product\": {\n        \"ids\": [\"digicirco.org/products/137\"],\n        \"name\": \"Carotte - Mauve\",\n        \"createdAt\": \"2022-05-17T08:33:57Z\",\n        \"categories\": [\n          {\n            \"ids\": [\"digicirco.org/productcategories/19\"],\n            \"name\": \"Légumes\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          },\n          {\n            \"ids\": [\"digicirco.org/productcategories/20\"],\n            \"name\": \"Légumes frais\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          }\n        ],\n        \"group\": {\n          \"ids\": [\"https://www.digicirco.org/products/135\"],\n          \"name\": \"Carotte\",\n          \"createdAt\": \"2022-05-17T08:30:35Z\"\n        }\n      },\n      \"item\": {\n        \"ids\": [\"digicirco.org/catalogitems/137\"],\n        \"name\": \"Carotte - Mauve\",\n        \"createdAt\": \"2022-05-17T08:33:57Z\"\n      },\n      \"quantity\": {\n        \"value\": 2\n      }\n    },\n    {\n      \"name\": \"Gobelets Beeyo 330 Ml\",\n      \"product\": {\n        \"ids\": [\"digicirco.org/products/117\"],\n        \"name\": \"Gobelets Beeyo 330 Ml\",\n        \"createdAt\": \"2022-05-13T09:46:53Z\",\n        \"categories\": [\n          {\n            \"ids\": [\"digicirco.org/productcategories/17\"],\n            \"name\": \"Verres réutilisables\",\n            \"classification\": {\n              \"key\": \"woocommerce-digicirco.org\",\n              \"name\": \"WooCommerce - digicirco.org\"\n            }\n          }\n        ]\n      },\n      \"item\": {\n        \"ids\": [\"digicirco.org/catalogitems/117\"],\n        \"name\": \"Gobelets Beeyo 330 Ml\",\n        \"createdAt\": \"2022-05-13T09:46:53Z\"\n      },\n      \"quantity\": {\n        \"value\": 3\n      }\n    }\n  ]\n}\n*/\n\nconst json = {\n\"number\": \"R505643351\",\n\"url\": \"https://openfoodnetwork.be/admin/orders/R505643351/edit\",\n\"date\": \"2022-07-04T23:00:00.000Z\",\n\"confirmed\": true,\n\"buyer\": {\n\"name\": \"Olivier Wouters\"\n},\n\"seller\": {\n\"name\": \"Comptoir Demo OFN\",\n\"workspace\": {\n\"ids\": [\n\"https://openfoodnetwork.be/enterprises/591/main\"\n]\n}\n},\n\"broker\": {\n\"name\": \"OFN\",\n\"workspace\": {\n\"marketplace\": {\n\"key\": \"ofn-be\"\n}\n}\n},\n\"lines\": [\n{\n\"name\": \"Lait\",\n\"item\": {\n\"ids\": [\n\"https://openfoodnetwork.be/enterprises/591/catalogs/main/items/23711\"\n],\n\"name\": \"Lait\"\n},\n\"product\": {\n\"name\": \"Lait\",\n\"ids\": [\n\"ofn_be/variant/id/23723\"\n],\n\"group\": {\n\"ids\": [\n\"ofn_be/product/id/9706\"\n],\n\"name\": \"Lait\"\n},\n\"categories\": [\n{\n\"ids\": [\n\"https://openfoodnetwork.be/categories/2\"\n],\n\"classification\": {\n\"key\": \"ofn-be\",\n\"name\": \"OFN BE\"\n}\n}\n]\n},\n\"quantity\": {\n\"value\": 1\n}\n},\n{\n\"name\": \"Sac de carottes bleues\",\n\"item\": {\n\"ids\": [\n\"https://openfoodnetwork.be/enterprises/591/catalogs/main/items/23697\"\n],\n\"name\": \"Sac de carottes bleues\"\n},\n\"product\": {\n\"name\": \"Sac de carottes bleues\",\n\"ids\": [\n\"ofn_be/variant/id/23722\" //23697\n],\n\"group\": {\n\"ids\": [\n\"ofn_be/product/id/9705\"\n],\n\"name\": \"Sac de carottes bleues\"\n},\n\"categories\": [\n{\n\"ids\": [\n\"https://openfoodnetwork.be/categories/2\"\n],\n\"classification\": {\n\"key\": \"ofn-be\",\n\"name\": \"OFN BE\"\n}\n}\n]\n},\n\"quantity\": {\n\"value\": 1\n}\n}\n],\n\"shippingAddress\": {\n\"name\": \"Olivier Wouters\",\n\"phone\": \"+32999999\",\n\"street\": \"Grand rue, 40\",\n\"postalCode\": \"6850\",\n\"locality\": \"Carlsbourg\",\n\"country\": {\n\"name\": \"Belgium\"\n},\n\"place\": {\n\"ids\": [\n\"https://openfoodnetwork.be/addresses/62719\"\n],\n\"address\": {\n\"street\": \"Grand rue, 40\",\n\"postalCode\": \"6850\",\n\"locality\": \"Carlsbourg\",\n\"country\": {\n\"name\": \"Belgium\"\n}\n}\n}\n},\n\"shippingMethod\": {\n\"ids\": [\n\"https://openfoodnetwork.be/shippingmethods/112\"\n],\n\"name\": \"Livraison par Bpost\",\n\"description\": \"La commande vous sera livrée dans les 2 jours ouvrables après la date choisie lors de votre commande - vu les circonstances ce délai peut-être plus long. Exemple : si commande prête pour le lundi 20/04, elle vous sera livrée vers le 22/04.\"\n}\n}\n\n\nreturn json;"
       },
       "name": "Test order init data",
       "type": "n8n-nodes-base.functionItem",
@@ -318,8 +282,7 @@
       "position": [
         880,
         260
-      ],
-      "disabled": true
+      ]
     },
     {
       "parameters": {
@@ -342,47 +305,23 @@
     },
     {
       "parameters": {
-        "fieldToSplitOut": "categories",
-        "options": {}
-      },
-      "name": "Product categories",
-      "type": "n8n-nodes-base.itemLists",
-      "typeVersion": 1,
-      "position": [
-        2100,
-        -460
-      ]
-    },
-    {
-      "parameters": {
-        "mode": "passThrough"
-      },
-      "name": "Merge1",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 1,
-      "position": [
-        2440,
-        -440
-      ]
-    },
-    {
-      "parameters": {
-        "functionCode": "const productCategory = $node[\"Product categories\"].json\nconst productClassification = $node[\"Upsert product classification\"].json.data.upsertOneProductClassification\n\nproductCategory.classification = {\n  link: productClassification._id\n}\n\nreturn productCategory;"
+        "functionCode": "const productCategory = $node[\"Categories\"].json\nconst productClassification = $node[\"Upsert product classification\"].json.data.upsertOneProductClassification\n\nproductCategory.classification = {\n  link: productClassification._id\n}\n\nreturn productCategory;"
       },
       "name": "Enrich product category",
       "type": "n8n-nodes-base.functionItem",
       "typeVersion": 1,
       "position": [
-        2600,
-        -440
-      ]
+        2320,
+        960
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
         "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
         "requestFormat": "json",
         "query": "mutation upsertProductClassification($query: ProductClassificationQueryInput!, $data: ProductClassificationInsertInput!) {\n  upsertOneProductClassification(query: $query, data: $data) {\n    _id\n    name\n    key\n  }\n}",
-        "variables": "={\n  \"query\": {\n    \"key_in\": [\"{{$node[\"Product categories\"].json[\"classification\"][\"key\"]}}\"]\n  },\n  \"data\": {{JSON.stringify($node[\"Product categories\"].json[\"classification\"])}}\n}",
+        "variables": "={\n  \"query\": {\n    \"key_in\": [\"{{$node[\"Categories\"].json[\"classification\"][\"key\"]}}\"]\n  },\n  \"data\": {{JSON.stringify($node[\"Categories\"].json[\"classification\"])}}\n}",
         "headerParametersUi": {
           "parameter": [
             {
@@ -396,9 +335,10 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2280,
-        -340
-      ]
+        2140,
+        960
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -419,21 +359,10 @@
       "type": "n8n-nodes-base.graphql",
       "typeVersion": 1,
       "position": [
-        2760,
-        -440
-      ]
-    },
-    {
-      "parameters": {
-        "mode": "passThrough"
-      },
-      "name": "Merge2",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 1,
-      "position": [
-        2940,
-        -580
-      ]
+        2480,
+        960
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -447,17 +376,252 @@
         1580,
         160
       ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const array = []\n\nfor(p of items?.map(i => i.json.newProduct) ?? []){\n  p?.categories.forEach(c => array.push(c))\n}\n\nreturn array?.filter((value, index, self) => index === self.findIndex((t) => (t.key === value.key))) ?? []"
+      },
+      "name": "Categories",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        1020
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "query getProduct($ids: [String!]!) {\n  product(query: {ids_in: $ids}) {\n    _id\n    ids\n    name\n    gtin\n  }\n}",
+        "variables": "={\n  \"ids\":{{JSON.stringify($node[\"Products\"].json.ids)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Find product",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2300,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.existingProduct?.gtin == null}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        1260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "return {\n  newProduct: $node[\"Products\"].json,\n  existingProduct: item.data.product\n};"
+      },
+      "name": "FunctionItem",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        4540,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"Decorated order\")"
+      },
+      "name": "Function",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2620,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"Decorated order\")"
+      },
+      "name": "Function2",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        4020,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        4300,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"Decorated order\")"
+      },
+      "name": "Function3",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        3800,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge4",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        4120,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge5",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        3600,
+        1240
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"FunctionItem\")"
+      },
+      "name": "Function4",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2980,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$items().length == 1 && Object.keys($items()[0].json).length == 0}}"
+            }
+          ]
+        }
+      },
+      "name": "IF1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        1020
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$items().length == 1 && Object.keys($items()[0].json).length == 0}}"
+            }
+          ]
+        }
+      },
+      "name": "IF2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        2760,
+        1200
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "mode": "passThrough",
+        "output": "input2"
+      },
+      "name": "Merge6",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        4000,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"FunctionItem\")"
+      },
+      "name": "Function5",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2980,
+        1260
+      ]
     }
   ],
   "connections": {
     "Enrich": {
       "main": [
         [
-          {
-            "node": "Slack",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "If not geocoded",
             "type": "main",
@@ -475,9 +639,9 @@
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Upsert shipping method",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -497,9 +661,9 @@
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Function3",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -534,7 +698,7 @@
             "index": 0
           },
           {
-            "node": "Upsert shipping method",
+            "node": "Merge",
             "type": "main",
             "index": 0
           }
@@ -556,45 +720,7 @@
       "main": [
         [
           {
-            "node": "Product categories",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upsert catalog items": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upsert products": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Get order relationships",
+            "node": "Find product",
             "type": "main",
             "index": 0
           }
@@ -656,40 +782,13 @@
         ]
       ]
     },
-    "Product categories": {
-      "main": [
-        [
-          {
-            "node": "Upsert product classification",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge1": {
+    "Upsert product classification": {
       "main": [
         [
           {
             "node": "Enrich product category",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "Upsert product classification": {
-      "main": [
-        [
-          {
-            "node": "Merge1",
-            "type": "main",
-            "index": 1
           }
         ]
       ]
@@ -709,18 +808,7 @@
       "main": [
         [
           {
-            "node": "Merge2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge2": {
-      "main": [
-        [
-          {
-            "node": "Enrich product",
+            "node": "IF2",
             "type": "main",
             "index": 0
           }
@@ -748,9 +836,245 @@
           }
         ]
       ]
+    },
+    "Categories": {
+      "main": [
+        [
+          {
+            "node": "IF1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find product": {
+      "main": [
+        [
+          {
+            "node": "FunctionItem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "Categories",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "FunctionItem": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Get order relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert catalog items": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert products": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function3": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Function2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function2": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge5": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function4": {
+      "main": [
+        [
+          {
+            "node": "Enrich product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF1": {
+      "main": [
+        [
+          {
+            "node": "Upsert product classification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF2": {
+      "main": [
+        [
+          {
+            "node": "Function4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Function5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge6": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Function5": {
+      "main": [
+        [
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {},
-  "id": 5
+  "id": 5,
+  "tags": []
 }

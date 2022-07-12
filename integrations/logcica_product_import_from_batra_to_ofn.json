@@ -1,0 +1,1084 @@
+{
+  "name": "logcica product import from batra to ofn",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const language = \"fr\"\n\n// how to handle percentage of nutrient per serving, ....\n\nconst productPublished = $node[\"Open batra unprocessed published products\"].json\n\nconst product = {\n  ids: [\n    \"openbatra_dev/product/gtin/\" + item.gtin\n  ],\n  gtin: item.gtin,\n  name: item.productName.find(i => i.language = language).value,\n  createdAt: new Date().toISOString(),\n  publishedAt: productPublished.isoDate\n//  regulatedName: item.regulatedProductName.find(i => i.language = language).value,\n/*,\n  consumerUsageInstructions: [\n    item.consumerUsageInstructions.find(i => i.language = language).value\n  ],\n  consumerStorageInstructions: [\n    item.consumerStorageInstructions.find(i => i.language = language).value\n  ],\n*/\n}\n\nif(item.manufacturer){\n  const manufacturer = item.manufacturer\n\n  const producer = {\n    vatId: item.manufacturer.vatID,\n    name: item.manufacturer.name.find(n => n.language == language).value,\n    gln: item.manufacturer.globalLocationNumber,\n    workspace: {\n      ids:[\n        \"openbatra_dev/activity/gln/\"+item.manufacturer.globalLocationNumber\n        ]\n    }\n  }\n  \n  if(manufacturer.address){\n    const address = manufacturer.address[0]\n\n    producer.address = {\n      streetAddress: address.streetAddress,\n      locality: address.addressLocality,\n      country: {\n        code: address.addressCountry\n      },\n      postCode: address.postalCode\n    }\n  }\n\n  product.producer = producer\n}\n\nif(item.brand)\n  product.brand = {\n    name: item.brand.find(b => b.language == language).value\n  } \n\nif(item.gpcCategoryCode){\n  product.categories = [\n    {\n      ids: [\"gs1/category/gpc/\" + item.gpcCategoryCode],\n      code: item.gpcCategoryCode,\n      classification: {\n        key: \"gpc\"\n      }\n    }\n  ]\n  product.categoryIds = product.categories[0].ids\n}\n\n\nconst productImage = item.image?.find(i => i.referencedFileType == \"PRODUCT_IMAGE\")\nif(productImage)\n  product.images = [{\n    url : productImage.referencedFileURL\n  }]\n\n\n// TODO peut-il y avoir plusieurs pays d'origine ?, subdivison code not supported\n\nif(item.countryOfOrigin)\n  product.countryOfOrigin = {\n    code: item.countryOfOrigin[0].countryCode\n  }\n\nif(item.ingredient != null){\n    product.ingredientList = item.ingredient.map(i => { \n      const ingr = { \n        ingredient: {\n          name: i.ingredientName,\n        },\n        sequence: i.ingredientSequence\n     }\n\n     if(i.ingredientContentPercentage != null)\n\n     ingr.quantity = {\n        percentage: parseFloat(i.ingredientContentPercentage)\n     }\n\n     return ingr\n\n  })\n}\n\nif(item.hasAllergen != null){\n    product.allergenList = item.hasAllergen.map(i => ({\n    allergen: {\n      code: i.allergenType,\n    },\n    quantity: {\n      level: {\n        code: i.allergenLevelOfContainmentCode\n      }\n    }\n  }))\n}\n\nif(item.netContent != null){\n\n  const netContentWeight =  item.netContent.find(n => [\"GRM\",\"KGM\"].includes(n.unitCode))\n\n  if(netContentWeight != null)\n    product.netWeight = {\n      value: parseFloat(netContentWeight.value),\n      unit: {\n        code: netContentWeight.unitCode\n      }\n    }\n}\n\nif(item.percentageOfAlcoholByVolume != null){\n  product.alcohol = {\n    quantity: {\n      percentage: parseFloat(item.percentageOfAlcoholByVolume)\n    }\n  }\n}\n\nlet basisQuantityIndex = -1\nbasisQuantityIndex = item.nutrientBasisQuantity?.findIndex(q => q.unitCode == \"GRM\" && q.value == 100)\n\nif(basisQuantityIndex > -1){\n  \n  product.nutrientList = []\n\n  for (const [key, value] of Object.entries(item) ) {\n\n    if(key.includes(\"PerNutrientBasis\"))\n      product.nutrientList.push(\n        {\n          nutrient: { key: key.replace(\"PerNutrientBasis\",\"\")}, \n          quantity: { value: value[basisQuantityIndex].value, unit: { code: value[basisQuantityIndex].unitCode } } \n        })\n\n  }\n}\n\nreturn product;"
+      },
+      "name": "Map product",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Code here will run only once, no matter how many input items there are.\n// More info and help: https://docs.n8n.io/nodes/n8n-nodes-base.function\n\n// Loop over inputs and add a new field called 'myNewField' to the JSON of each one\nfor (item of items) {\n  item.json.myNewField = 1;\n}\n\n\n\nreturn [{\n  json: {\n    codes: items.map(i => i.json.code),\n    lists: [...items.reduce((map, obj) => map.set(obj.json.list.key, obj.json.list.key), new Map()).values()]\n  }\n}]"
+      },
+      "name": "Query data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        260,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "=query {\n  codes(query: { list: { key_in: {{JSON.stringify($json[\"lists\"])}}}, key_in: {{JSON.stringify($json[\"codes\"])}}}) {\n    _id\n    key\n    name\n    symbol \n    sequence \n    list {\n      key \n    } \n  }\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get codes",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        440,
+        140
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://app.openbatra.org/OpenBatra/rss.xml"
+      },
+      "name": "Batra RSS read",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "function cleanUpEmpty(obj){\n    return JSON.parse(JSON.stringify(obj), (key, value) => {\n        if (value == null || value == \"\" || value == \"Not Applicable\"  || value == [] || value == {})\n            return undefined;\n        return value;\n    });\n}\n\nitem.energyPerNutrientBasis.forEach(e =>{ if(e.unitCode == \"KCAL\"){ e.unitCode = \"E14\" }})\n\nconst newItem = cleanUpEmpty(item);\n\ndelete newItem.packaging\ndelete newItem.countryOfOriginStatement\n\nreturn newItem"
+      },
+      "name": "Clean up object",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "item = {\n  \"gtin\": \"00454000020030\",\n  \"gpcCategoryCode\": \"10006122\",\n  \"gpcCategoryDescription\": \"\",\n  \"productName\": [{ \"value\": \"Sac de carottes\", \"language\": \"fr\" }],\n  \"regulatedProductName\": [],\n  \"productMarketingMessage\": [],\n  \"brand\": [{ \"value\": \"logCiCa\", \"language\": \"fr\" }],\n  \"packaging\": {\n    \"PackagingDetails\": {\n      \"packagingShape\": \"Not Applicable\",\n      \"hasReturnablePackageDeposit\": [],\n      \"packagingFeature\": \"Not Applicable\",\n      \"packagingFunction\": \"Not Applicable\",\n      \"packagingMaterial\": [],\n      \"packagingType\": \"\",\n      \"packagingRecyclingScheme\": \"Not Applicable\",\n      \"packagingRecyclingProcessType\": \"Not Applicable\"\n    }\n  },\n  \"consumerStorageInstructions\": [],\n  \"consumerHandlingStorage\": [],\n  \"numberOfServingsPerPackage\": 0,\n  \"numberOfServingsRangeDescription\": [],\n  \"servingSuggestion\": [],\n  \"referencedFile\": [],\n  \"netContent\": [{ \"value\": 100, \"unitCode\": \"GRM\" }],\n  \"grossWeight\": [],\n  \"drainedWeight\": [],\n  \"outOfPackageWidth\": [],\n  \"outOfPackageHeight\": [],\n  \"outOfPackageDepth\": [],\n  \"outOfPackageDiameter\": [],\n  \"ingredient\": [\n    {\n      \"ingredientContentPercentage\": 100,\n      \"ingredientName\": \"Carotte\",\n      \"ingredientSequence\": 0\n    }\n  ],\n  \"hasAllergen\": [\n    { \"allergenLevelOfContainmentCode\": \"CONTAINS\", \"allergenType\": \"NW\" }\n  ],\n  \"countryOfOrigin\": [\n    { \"countryCode\": \"BE\", \"countrySubdivisionCode\": \"BE_WLX\" }\n  ],\n  \"countryOfOriginStatement\": [{ \"value\": \"\", \"language\": \"fr\" }],\n  \"nutrientMeasurementPrecision\": [\"Approximately\"],\n  \"nutrientBasisQuantityType\": [],\n  \"nutrientBasisQuantity\": [{ \"value\": 100, \"unitCode\": \"GRM\" }],\n  \"energyPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 10, \"value\": 300, \"unitCode\": \"GRM\" }\n  ],\n  \"fatPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 4, \"value\": 2, \"unitCode\": \"GRM\" }\n  ],\n  \"saturatedFatPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 4, \"value\": 2, \"unitCode\": \"GRM\" }\n  ],\n  \"carbohydratesPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 10, \"value\": 9.5, \"unitCode\": \"GRM\" }\n  ],\n  \"sugarsPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 15, \"value\": 3, \"unitCode\": \"GRM\" }\n  ],\n  \"proteinPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 4, \"value\": 5, \"unitCode\": \"GRM\" }\n  ],\n  \"saltPerNutrientBasis\": [\n    { \"dailyValueIntakePercent\": 3, \"value\": 4, \"unitCode\": \"GRM\" }\n  ],\n  \"packagingMarkedLabelAccreditation\": [\"VEGAN_NATURAL_FOOD_CERTIFIERS\"],\n  \"isWashedReadyToEat\": \"Not Applicable\",\n  \"isPittedStoned\": \"Not Applicable\",\n  \"isSeedless\": \"Not Applicable\",\n  \"isShelledPeeled\": \"Not Applicable\",\n  \"maturationMethod\": \"Not Applicable\",\n  \"percentageOfAlcoholByVolume\": 0,\n  \"isFromConcentrate\": \"Not Applicable\",\n  \"vintner\": \"\",\n  \"beverageVintage\": \"\",\n  \"isVintage\": \"Not Applicable\",\n  \"alcoholicBeverageSubregion\": \"\",\n  \"isDecaffeinated\": \"Not Applicable\",\n  \"isCarbonated\": \"Not Applicable\",\n  \"bonelessClaim\": \"Not Applicable\",\n  \"anatomicalForm\": \"Not Applicable\",\n  \"minimumMeatPoultryContent\": [],\n  \"meatPoultryType\": \"\",\n  \"isHomogenised\": \"Not Applicable\",\n  \"fatInMilkContent\": 0,\n  \"cheeseMaturationPeriodDescription\": \"\",\n  \"isRindEdible\": \"Not Applicable\",\n  \"cheeseFirmness\": \"Not Applicable\",\n  \"sharpnessOfCheese\": \"Not Applicable\",\n  \"fatpercentageInDryMatter\": 0,\n  \"fishType\": \"\",\n  \"freshOrSeawaterFarmed\": \"Not Applicable\",\n  \"catchZone\": \"\",\n  \"minimumFishContent\": [],\n  \"image\": [],\n  \"manufacturer\": {\n    \"taxID\": \"\",\n    \"vatID\": \"BE407626464\",\n    \"globalLocationNumber\": \"0454000020009\",\n    \"name\": [{ \"language\": \"fr\", \"value\": \"Qalinca Labs\" }],\n    \"address\": [\n      {\n        \"streetAddress\": \"Av. Franklin Roosevelt 50\",\n        \"postalCode\": \"1050\",\n        \"addressLocality\": \"Ixelles\",\n        \"addressCountry\": \"056\"\n      }\n    ],\n    \"contactPoint\": [\n      {\n        \"contactTitle\": \"IT\",\n        \"contactType\": \"IT SUPPORT\",\n        \"availableLanguage\": \"fr\",\n        \"telephone\": \"+32 2 650 34 67\",\n        \"faxNumber\": \"\",\n        \"email\": \"info@qalinca-labs.be\"\n      }\n    ]\n  }\n}\n\nconst item2 = JSON.parse(JSON.stringify(item))\ndelete item2.hasAllergen\n\nreturn [item,item2];"
+      },
+      "name": "Stub Batra",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -940,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "let codes = []\n\nfor (item of items) {\n\n  const product = item.json\n\n  codes = codes.concat(\n    product.allergenList?.map(i => ({\n      code: i.allergen?.code,\n      list: {\n        key: \"allergens-gs1-benelux\"\n      }\n    })))\n\n  codes = codes.concat(\n    product.allergenList?.map(i => ({\n    code: i.quantity?.level?.code,\n    list: {\n      key: \"levels-of-containment-gs1-benelux\"\n    }\n  })))\n\n  codes = codes.concat(\n    product.nutrientList?.map(i => ( {\n      code: i.nutrient?.key,\n      list: {\n        key: \"nutrients-gs1-voc\"\n      }\n  })))\n\n  codes = codes.concat(\n    product.nutrientList?.map(i => ( {\n      code: i.quantity?.unit?.code,\n      list: {\n        key: \"units-un-cefact\"\n      }\n  })))\n\n  if(product.countryOfOrigin)\n    codes.push({\n      code: product.countryOfOrigin.code,\n      list: {\n        key: \"countries-iso\"\n      }\n\n    })\n  \n  if(product.netWeight)\n    codes.push({\n      code: product.netWeight.unit.code,\n      list: {\n        key: \"units-un-cefact\"\n      }\n\n    })\n\n}\n\ncodes = codes.filter(c => c != null && c.code != null)\n\nreturn [...codes.reduce((map, obj) => map.set(obj.list.key + \"-\" + obj.code, obj), new Map()).values()];"
+      },
+      "name": "Codes",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        80,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"Map product\") ;"
+      },
+      "name": "Products",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        620,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{encodeURI($json.product.images[0].url)}}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "name": "Get image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        4920,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "url": "https://openfoodnetwork.be/api/v0/products",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={ \n\"product\":{{JSON.stringify( $json)}}\n}"
+      },
+      "name": "Create product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        4140,
+        -260
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "requestMethod": "POST",
+        "url": "=https://openfoodnetwork.be/api/v0/product_images/{{$json.id}}",
+        "jsonParameters": true,
+        "options": {
+          "bodyContentType": "multipart-form-data"
+        },
+        "sendBinaryData": true
+      },
+      "name": "Create image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        5100,
+        -100
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "const product = item\nconst codes = $items(\"Get codes\")[0]?.json?.data?.codes ?? []\n\n// for netWeight ${codes.find(c => c.key == product.netWeight.unit.code).symbol}\n\nconst findCode = (key, listKey) => {\n  return codes.find(c => c.key == key && c.list.key == listKey)\n}\n\nif(product.countryOfOrigin)\nproduct.countryOfOrigin = findCode(product.countryOfOrigin.code,\"countries-iso\")\n\nif(product.netWeight)\nproduct.netWeight.unit = findCode(product.netWeight.unit.code,\"units-un-cefact\")\n\nproduct.allergenList = product.allergenList?.map(i => {\n  i.allergen = findCode(i.allergen.code,\"allergens-gs1-benelux\")\n  i.quantity.level = findCode(i.quantity.level.code, \"levels-of-containment-gs1-benelux\")\n  return i\n})\n\nproduct.nutrientList = product.nutrientList?.map(i => {\n  i.nutrient = findCode(i.nutrient.key, \"nutrients-gs1-voc\")\n  i.quantity.unit = findCode(i.quantity.unit.code, \"units-un-cefact\")\n  return i\n})\n\nreturn product;"
+      },
+      "name": "Merge codes into product",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        820,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "=query getProductRelationships($producerWorkspaceIds: [String!]!) {\n  producerWorkspace: workspace(query: {ids_in: $producerWorkspaceIds}) {\n    _id\n    name\n  }\n}",
+        "variables": "={\n  \"producerWorkspaceIds\": {{JSON.stringify($node[\"Merge codes into product\"].json[\"producer\"][\"workspace\"][\"ids\"])}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get product relationships",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        -260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "categories",
+        "options": {}
+      },
+      "name": "Product categories",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "passThrough"
+      },
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        1380,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const productCategory = $node[\"Product categories\"].json\nconst productClassification = $node[\"Upsert product classification\"].json.data.upsertOneProductClassification\n\nproductCategory.classification = {\n  link: productClassification._id\n}\n\ndelete productCategory.code\n\nreturn productCategory;"
+      },
+      "name": "Enrich product category",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertProductClassification($query: ProductClassificationQueryInput!, $data: ProductClassificationInsertInput!) {\n  upsertOneProductClassification(query: $query, data: $data) {\n    _id\n    name\n    key\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"key_in\": [\"{{$node[\"Product categories\"].json[\"classification\"][\"key\"]}}\"]\n  },\n  \"data\": {{JSON.stringify($node[\"Product categories\"].json[\"classification\"])}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert product classification",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "mutation upsertProductCategory($query: ProductCategoryQueryInput!, $data: ProductCategoryInsertInput!) {\n  upsertOneProductCategory(query: $query, data: $data) {\n    _id\n    ids\n    name\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Enrich product category\"].json[\"ids\"])}}\n  },\n  \"data\": {{JSON.stringify($node[\"Enrich product category\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert product category",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return $items(\"Merge codes into product\") ;"
+      },
+      "name": "Products1",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const productCategories = $items(\"Upsert product category\")\nconst productRelationships = $node[\"Get product relationships\"].json\n\nfunction findCommonElements(arr1, arr2) {\n    return arr1.some(item => arr2.includes(item))\n}\n\n// TODO refactor this\nitem.categories = {\n  link: item.categories.map(c => \n   productCategories.find(pc => \n    findCommonElements(pc.json.data.upsertOneProductCategory.ids,c.ids))\n     .json.data.upsertOneProductCategory._id\n  )\n}\n\ndelete item.categoryIds\n\nitem.producer = {\n  workspace: {\n    link: productRelationships.data.producerWorkspace._id\n  }\n}\n\nif(item.countryOfOrigin)\n  item.countryOfOrigin = { link: item.countryOfOrigin._id }\n\nif(item.netWeight)\n  item.netWeight.unit = { link: item.netWeight.unit._id }\n\nitem.allergenList = item.allergenList?.map(i => {\n  i.allergen = i.allergen._id \n  i.quantity.level = i.quantity.level._id \n  return i\n})\n\nitem.nutrientList = item.nutrientList?.map(i => {\n  i.nutrient = i.nutrient._id \n  i.quantity.unit = i.quantity.unit._id\n  return i\n})\n\nreturn item;"
+      },
+      "name": "Enrich product",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "=query getProduct($query: ProductQueryInput!) {\n  product (query: $query) {\n    _id\n    ids \n    name\n    producer {\n     workspace {\n       name\n     }\n    }\n  }\n}",
+        "variables": "={\n  \"query\": {\n    \"ids_in\": {{JSON.stringify($node[\"Enrich product\"].json[\"ids\"])}}\n  }\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Get product1",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        -260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.product.images != null}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Has images",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        4640,
+        -60
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "NoOp2",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        4920,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Handle multiple images"
+      },
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2980,
+        -900
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "let twoDaysAgo = new Date();\ntwoDaysAgo.setDate(twoDaysAgo.getDate() - 2);\n\nitems = items\n   .filter(i => i.json.isoDate >=  twoDaysAgo.toISOString()) // latest\n   .filter(i => i.json.title.startsWith(\"0045400002\")) // subscribed\n   .sort((a, b) => new Date(b.json.isoDate) - new Date(a.json.isoDate)) // unique\n     .filter((value, index, self) => index === self.findIndex((t) => (t.json.title === value.json.title)))\n\nreturn items"
+      },
+      "name": "Latest unique subscribed published products",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"link\"]}}",
+        "options": {}
+      },
+      "name": "Open batra product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ ids_in : items.map(i => \"openbatra_dev/product/gtin/\" + i.json.title)}];"
+      },
+      "name": "Product search query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "=query {\n  products(query: {\n      ids_in: {{ JSON.stringify($json[\"ids_in\"])}}\n  }){\n    _id \n    ids\n    createdAt\n    publishedAt \n  }\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Product search",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        -860,
+        140
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "const products = $node[\"Product search\"].json.data.products\nconst productPublishedEvents = $items(\"Latest unique subscribed published products\").map(i => i.json)\nconst keptEvents = []\n\nfor(const e of productPublishedEvents){\n\n  const product = products.find(p => p.ids.includes(\"openbatra_dev/product/gtin/\" + e.title))\n  \n  if(product == null){\n    keptEvents.push(e)\n    continue\n  }\n\n  if(product.publishedAt != null && new Date(e.isoDate) > new Date(product.publishedAt)){\n    keptEvents.push(e)\n  }else{\n    if(product.createdAt != null && new Date(e.isoDate) > new Date(product.createdAt)){\n      keptEvents.push(e)\n    }\n  }\n}\n\nreturn keptEvents"
+      },
+      "name": "Open batra unprocessed published products",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const product = $node[\"Enrich product\"].json\nconst existingProduct = item.data?.product\n\nif(existingProduct != null)\n  product.ids = [...new Set([...existingProduct.ids ,...product.ids])];\n\nreturn product;"
+      },
+      "name": "Merge product ids",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "=mutation upsertProduct($query: ProductQueryInput, $data: ProductInsertInput!) {\n  upsertOneProduct(query: $query, data: $data) {\n    _id\n    ids \n    name \n    owner {\n     workspace {\n       name\n     }\n    }\n  }\n}",
+        "variables": "={\n \"query\":  {\n    \"ids_in\": {{JSON.stringify($node[\"Enrich product\"].json.ids)}} \n  },\n  \"data\": {{JSON.stringify($node[\"Enrich product\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Upsert product",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        3080,
+        -260
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "item = $node[\"Upsert product\"].json.data.upsertOneProduct\nitem.ids.push(\"ofn_be/product/id/\" + $json.id)\nitem.ids.push(\"ofn_be/variant/id/\" + $json.variants[0].id)\n\nreturn { _id: item._id, ids: item.ids };"
+      },
+      "name": "Update product payload",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        4300,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "endpoint": "https://realm.mongodb.com/api/client/v2.0/app/logcica-pfufx/graphql",
+        "requestFormat": "json",
+        "query": "=mutation updateProduct($query: ProductQueryInput!, $set: ProductUpdateInput!) {\n  updateOneProduct(query: $query, set: $set) {\n    _id\n    name\n    owner {\n     workspace {\n       name\n     }\n    }\n  }\n}",
+        "variables": "={\n \"query\": {\n   \"_id\": \"{{$node[\"Update product payload\"].json._id}}\" \n  }, \n  \"set\": {{JSON.stringify($node[\"Update product payload\"].json)}}\n}",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "apiKey",
+              "value": "={{ $env.COCONUT_MONGO_REALM_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "name": "Update product",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        4580,
+        -440
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "const product = $json.product\nconst templating = $json.templating\n\nconst ofnProduct = {\n  name: product.name,\n  price: \"0\", // default\n  shipping_category_id: 1, // default\n  supplier_id: 591, // TODO replace\n  primary_taxon_id: 2, // default\n  variant_unit: \"items\",\n  variant_unit_name: \" unité\",\n  unit_value: 1,\n  //unit_description: \"botte\",\n  //variant_unit_scale: 0.1\n  // all above is mandatory\n  description: templating.description,\n  sku: product.gtin,\n  //display_name: \"test\",\n  //category_id: 2, // map gs1 ofn categories\n  tax_category_id: 1,\n  meta_description: product.gtin,\n  meta_keywords: product.gtin, // for web search\n\n}\n\nreturn ofnProduct;"
+      },
+      "name": "OFN create product payload",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        3920,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const product = $json.product\nconst templating = $json.templating\nconst ofnId = $json.id\n\nconst ofnProduct = {\n  id: ofnId,\n  name: product.name,\n  description: templating.description\n}\n\nreturn ofnProduct;"
+      },
+      "name": "OFN update product payload",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        4000,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "requestMethod": "PATCH",
+        "url": "=https://openfoodnetwork.be/api/v0/products/{{$json[\"id\"]}}",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n \"product\": {{JSON.stringify($json)}} \n}"
+      },
+      "name": "Patch product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        4200,
+        120
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8",
+          "name": "ofn be demo account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -1800,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const product = $node[\"Merge product ids\"].json\nconst templating = $node[\"OFN description\"].json\n\nreturn {\n  id: item.data.upsertOneProduct.ids.find(i => i.startsWith(\"ofn_be/product/id/\"))?.replace(\"ofn_be/product/id/\",\"\"),\n  logCiCaId: item.data.upsertOneProduct._id,\n  product: product,\n  templating: templating\n}"
+      },
+      "name": "OFN id",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        3260,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"id\"] != null}}"
+            }
+          ]
+        }
+      },
+      "name": "IF",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        3620,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const product = $node[\"Products1\"].json\nconst codes = $items(\"Get codes\")[0]?.json?.data?.codes ?? []\n\n// for netWeight ${codes.find(c => c.key == product.netWeight.unit.code).symbol}\n\nconst applyTemplate = (template,data) => data == null ? \"\" : template(data)\n\nconst ingredientListTemplate = (ingredientList) => \n`\n<p>\n<strong>Ingrédients</strong>\n</p>\n\n<p>\n${ingredientList.map(i => \n  `${i.ingredient.name} ${i.quantity?.percentage ? `(${i.quantity?.percentage}%)` : \"\" }`)\n.join(\", \")}\n</p>\n`\n\nconst nutrientListTemplate = (nutrientList) => \n`\n<p>\n  <strong>Nutrition</strong>\n</p>\n\n${nutrientList.map(i => {\n   return `<p>${i.nutrient.sequence.includes(\".\") ? \"&nbsp;&nbsp;dont \" : \"\"} ${i.nutrient?.name ?? i.nutrient.key}: \n ${i.quantity.value} ${i.quantity.unit.symbol}</p>`\n}).join(\"\")}\n`\n\nconst allergenListTemplate = (allergenList) => \n`\n<p>\n<strong>Allergènes</strong>\n</p>\n\n<p>\n${allergenList.map(i => i.quantity.level?.name + \" \" + i.allergen.name).join(\"<br/>\")}\n</p>\n`\n\nconst productTemplate = {\n  description: \n`\n<p>\n  <a href=\"https://www.batra.link/productFull.html?gtin=${ product.gtin }\">\n    Fiche produit sur OpenBatra\n  </a>\n</p>\n<p>\n  ${product.countryOfOrigin ? `<u>Pays d'origine:</u> ${product.countryOfOrigin.name}` : \"\"}\n  ${product.netWeight ? `<br/><u>Poids net:</u> ${product.netWeight.value}${product.netWeight.unit.symbol}` : \"\"} \n  ${product.alcohol ? `<br/><u>Pourcentage d'alcool:</u> ${product.alcohol.quantity.percentage}%` : \"\"}\n</p>\n\n${applyTemplate(ingredientListTemplate,product.ingredientList)}\n${applyTemplate(allergenListTemplate,product.allergenList)}\n${applyTemplate(nutrientListTemplate,product.nutrientList)}\n`\n}\n\n\nreturn productTemplate;"
+      },
+      "name": "OFN description",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        2900,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return {\n  id: $json.id,\n  product: $node[\"IF\"].json.product\n}"
+      },
+      "name": "FunctionItem",
+      "type": "n8n-nodes-base.functionItem",
+      "typeVersion": 1,
+      "position": [
+        4340,
+        -140
+      ]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Batra RSS read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map product": {
+      "main": [
+        [
+          {
+            "node": "Codes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query data": {
+      "main": [
+        [
+          {
+            "node": "Get codes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batra RSS read": {
+      "main": [
+        [
+          {
+            "node": "Latest unique subscribed published products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean up object": {
+      "main": [
+        [
+          {
+            "node": "Map product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Codes": {
+      "main": [
+        [
+          {
+            "node": "Query data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get codes": {
+      "main": [
+        [
+          {
+            "node": "Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Products": {
+      "main": [
+        [
+          {
+            "node": "Merge codes into product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create product": {
+      "main": [
+        [
+          {
+            "node": "Update product payload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "FunctionItem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get image": {
+      "main": [
+        [
+          {
+            "node": "Create image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge codes into product": {
+      "main": [
+        [
+          {
+            "node": "Product categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product categories": {
+      "main": [
+        [
+          {
+            "node": "Upsert product classification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Enrich product category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich product category": {
+      "main": [
+        [
+          {
+            "node": "Upsert product category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert product classification": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Upsert product category": {
+      "main": [
+        [
+          {
+            "node": "Get product relationships",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get product relationships": {
+      "main": [
+        [
+          {
+            "node": "Products1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Products1": {
+      "main": [
+        [
+          {
+            "node": "Enrich product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich product": {
+      "main": [
+        [
+          {
+            "node": "Get product1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has images": {
+      "main": [
+        [
+          {
+            "node": "Get image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NoOp2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Latest unique subscribed published products": {
+      "main": [
+        [
+          {
+            "node": "Product search query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open batra product": {
+      "main": [
+        [
+          {
+            "node": "Clean up object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product search query": {
+      "main": [
+        [
+          {
+            "node": "Product search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Product search": {
+      "main": [
+        [
+          {
+            "node": "Open batra unprocessed published products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open batra unprocessed published products": {
+      "main": [
+        [
+          {
+            "node": "Open batra product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get product1": {
+      "main": [
+        [
+          {
+            "node": "Merge product ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge product ids": {
+      "main": [
+        [
+          {
+            "node": "OFN description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update product payload": {
+      "main": [
+        [
+          {
+            "node": "Update product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OFN create product payload": {
+      "main": [
+        [
+          {
+            "node": "Create product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OFN update product payload": {
+      "main": [
+        [
+          {
+            "node": "Patch product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "Batra RSS read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF": {
+      "main": [
+        [
+          {
+            "node": "OFN create product payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OFN update product payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OFN description": {
+      "main": [
+        [
+          {
+            "node": "Upsert product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert product": {
+      "main": [
+        [
+          {
+            "node": "OFN id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OFN id": {
+      "main": [
+        [
+          {
+            "node": "IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FunctionItem": {
+      "main": [
+        [
+          {
+            "node": "Has images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": 17,
+  "tags": []
+}
